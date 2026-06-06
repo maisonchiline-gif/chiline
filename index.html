@@ -1,112 +1,104 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Хронология Композиторов</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css">
-</head>
+    <title>CHILINE</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #fff; color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+        header { text-align: center; margin: 15vh 0 8vh; }
+        .brand-title { font-size: 2.2rem; font-weight: 300; letter-spacing: 0.5em; text-transform: uppercase; text-indent: 0.5em; }
+        
+        main { width: 100%; max-width: 700px; border-inline: 1px solid #000; padding: 0 40px; }
+        .row { width: 100%; }
+        
+        .trigger { display: flex; justify-content: space-between; align-items: baseline; padding: 20px 0; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .row-title { font-size: 1.05rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; }
+        .trigger-right { display: flex; align-items: baseline; gap: 20px; }
+        
+        .row-meta { font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: #999; transition: color 0.3s linear; }
+        .icon { width: 18px; height: 18px; color: #999; position: relative; top: 2px; transition: color 0.3s linear, transform 0.3s linear; }
+        
+        .trigger:hover .row-meta, .trigger:hover .icon { color: #000; }
+        .row.is-open .icon { transform: rotate(45deg); color: #000; }
 
+        .content { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s linear; }
+        .row.is-open .content { grid-template-rows: 1fr; }
+        .inner { overflow: hidden; opacity: 0; transition: opacity 0.2s linear; }
+        .row.is-open .inner { opacity: 1; transition: opacity 0.3s linear; }
+        
+        .links { padding: 0 0 30px 20px; display: flex; flex-direction: column; gap: 16px; }
+        .sub-link { font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase; color: #666; text-decoration: none; width: fit-content; transition: color 0.2s ease; }
+        .sub-link:hover { color: #000; }
+
+        footer { margin-top: auto; padding-top: 8vh; }
+        .footer-mark { font-size: 0.7rem; letter-spacing: 0.4em; color: #bcb; }
+
+        @media (max-width: 600px) { main { padding: 0 20px; } .row-meta { display: none; } }
+    </style>
+</head>
 <body>
 
-    <button id="btn-show-menu">Меню</button>
+    <header>
+        <h1 class="brand-title">Chiline</h1>
+    </header>
 
-    <div id="ui-layer" class="ui-hidden">
-        <button id="btn-close-menu">✖</button> 
-        <h1>Композиторов — <span id="total-count">0</span></h1>
-
-        <div class="filter-group">
-            <label>Вид отображения:</label>
-            <select id="ctrl-layout">
-                <option value="compact">Компактный</option>
-                <option value="linear">Построчный</option>
-            </select>
-        </div>
-
-        <div class="filter-group">
-            <label>Сортировка (построение):</label>
-            <select id="ctrl-sort">
-                <option value="birth">По году рождения</option>
-                <option value="death">По году смерти</option>
-                <option value="lifespan">По продолжительности жизни</option>
-                <option value="country">По странам (Группировка)</option>
-            </select>
-        </div>
-
-        <div class="filter-group">
-            <label>🎨 Расцветка:</label>
-            <select id="ctrl-color">
-                <option value="era">По эпохам</option>
-                <option value="country">По странам</option>
-            </select>
-        </div>
-
-        <div class="filter-group">
-            <div class="filter-header">
-                <label>Эпоха:</label>
-                <a href="#" class="toggle-all" data-target="ctrl-era">Вкл/Выкл все</a>
+    <main>
+        <div class="row">
+            <div class="trigger">
+                <span class="row-title">Гармония</span>
+                <div class="trigger-right">
+                    <span class="row-meta">Система / 01</span>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 4v16m-8-8h16" /></svg>
+                </div>
             </div>
-            <div id="ctrl-era" class="checkbox-container"></div>
+            <div class="content"><div class="inner"><div class="links">
+                <a href="circle/" class="sub-link">квинтовый круг</a>
+                <a href="circle/" class="sub-link">квинтовый квадрат</a>
+            </div></div></div>
         </div>
 
-        <div class="filter-group">
-            <div class="filter-header">
-                <label>Страна:</label>
-                <a href="#" class="toggle-all" data-target="ctrl-country">Вкл/Выкл все</a>
+        <div class="row">
+            <div class="trigger">
+                <span class="row-title">Как слушать музыку</span>
+                <div class="trigger-right">
+                    <span class="row-meta">Книги / 02</span>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 4v16m-8-8h16" /></svg>
+                </div>
             </div>
-            <div id="ctrl-country" class="checkbox-container"></div>
+            <div class="content"><div class="inner"><div class="links">
+                <a href="rachmaninoff_op._18/" class="sub-link">Выпуск 1: Рахманинов (Op. 18)</a>
+            </div></div></div>
         </div>
-        
 
-        <div class="filter-group">
-            <label>Возраст: от <span id="val-min-life">0</span> до <span id="val-max-life">120</span> лет</label>
-            <input type="range" id="ctrl-min-life" min="0" max="120" value="0">
-            <input type="range" id="ctrl-max-life" min="0" max="120" value="120" style="margin-top: 5px;">
+        <div class="row">
+            <div class="trigger">
+                <span class="row-title">Великие композиторы</span>
+                <div class="trigger-right">
+                    <span class="row-meta">История / 03</span>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 4v16m-8-8h16" /></svg>
+                </div>
+            </div>
+            <div class="content"><div class="inner"><div class="links">
+                <a href="timeline/" class="sub-link">Таймлайн</a>
+            </div></div></div>
         </div>
-        
-        <div class="filter-group">
-            <label>Длина блоков:</label>
-            <input type="range" id="ctrl-width" min="0.1" max="1" step="0.05" value="0.5">
-        </div>
-    </div>
+    </main>
 
-    <div id="viewport" data-zoom="100">
-        <div id="canvas">
-            <div id="bg-layer"></div>
-            <div id="grid-layer"></div>
-            <div id="facts-layer"></div>
-            <div id="items-layer"></div>
-        </div>
-    </div>
+    <footer>
+        <span class="footer-mark">MDXXVI</span>
+    </footer>
 
-    <div id="fact-card">
-        <div class="fact-year" id="fact-card-year"></div>
-        <h3 id="fact-card-title"></h3>
-        <p id="fact-card-text"></p>
-    </div>
+    <script>
+        document.addEventListener('click', e => {
+            let t = e.target.closest('.trigger');
+            if (!t) return;
+            let r = t.parentNode;
+            [...r.parentNode.children].forEach(s => s !== r && s.classList.remove('is-open'));
+            r.classList.toggle('is-open');
+        });
+    </script>
 
-    <div id="facts-nav">
-        <button class="nav-btn" id="btn-prev-fact">⬅ В прошлое</button>
-        <div id="fact-info-display">Режим композиторов</div>
-        <button class="nav-btn" id="btn-next-fact">В будущее ➡</button>
-        <button class="nav-btn" id="btn-jump-composers">К композиторам</button>
-    </div>
-    
-
-    <div id="tooltip"></div>
-
-    <div id="social-links">
-    <a href="#" class="social-btn ozon" target="_blank" title="Ozon">Ozon</a>
-    <a href="#" class="social-btn boosty" target="_blank" title="Boosty">Boosty</a>
-    <a href="#" class="social-btn telegram" target="_blank" title="Telegram">Telegram</a>
-    <a href="#" class="social-btn instagram" target="_blank" title="Instagram">Instagram</a>
-    <a href="#" class="social-btn youtube" target="_blank" title="YouTube">YouTube</a>
-    <a href="#" class="social-btn donate" target="_blank" title="Поддержать проект">Донат</a>
-</div>
-
-    <script src="script.js"></script>
 </body>
-
 </html>

@@ -1,0 +1,609 @@
+/* БАЗОВЫЕ СТИЛИ */
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #1a1a1a;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+}
+
+#viewport {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    cursor: grab;
+}
+
+#viewport:active {
+    cursor: grabbing;
+}
+
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+}
+
+/* ИНТЕРФЕЙС (UI) */
+#ui-layer {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 280px;
+    transition: transform 0.3s, opacity 0.3s;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+#ui-layer::-webkit-scrollbar,
+.checkbox-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+#ui-layer::-webkit-scrollbar-thumb,
+.checkbox-container::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 3px;
+}
+
+.ui-hidden {
+    transform: translateX(-150%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+#btn-show-menu {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 90;
+    background: rgba(25, 28, 35, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: none;
+    font-weight: bold;
+}
+
+h1 {
+    margin: 0 0 15px 0;
+    font-size: 20px;
+    color: #61dafb;
+}
+
+.filter-group {
+    margin-bottom: 15px;
+}
+
+.filter-group>label,
+.filter-header label {
+    font-size: 13px;
+    color: #aaa;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.filter-group select,
+.filter-group input[type="range"] {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    background: #1a1a1a;
+    color: #fff;
+    border: 1px solid #444;
+    font-size: 14px;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+select option:disabled {
+    color: #555;
+    background: #1a1a1a;
+    font-style: italic;
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.toggle-all {
+    color: #61dafb;
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.toggle-all:hover {
+    text-decoration: underline;
+}
+
+.checkbox-container {
+    max-height: 130px;
+    overflow-y: auto;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    color: #fff;
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+}
+
+.checkbox-label input {
+    margin-right: 8px;
+    cursor: pointer;
+    accent-color: #61dafb;
+}
+
+/* ЭЛЕМЕНТЫ ХОЛСТА */
+.composer-block {
+    position: absolute;
+    border-radius: 4px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: left 0.6s cubic-bezier(0.22, 1, 0.36, 1), top 0.6s cubic-bezier(0.22, 1, 0.36, 1), width 0.4s ease-out, opacity 0.4s, filter 0.3s, background-color 0.5s;
+}
+
+.composer-block.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.9);
+}
+
+.composer-block.dimmed {
+    opacity: 0.15;
+    filter: grayscale(80%);
+}
+
+.composer-block:hover {
+    filter: brightness(1.3);
+    z-index: 100 !important;
+    border: 2px solid #fff;
+    opacity: 1 !important;
+}
+
+.composer-name {
+    padding: 0 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
+    pointer-events: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.era-background {
+    position: absolute;
+    border-left: none; 
+    pointer-events: none;
+}
+
+.era-label { 
+    display: none; /* Эта строчка полностью скрывает текст */
+    position: absolute; 
+    top: calc(var(--text-y, 30px) + 40px * var(--inv-scale, 1)); 
+    font-size: 32px; 
+    font-weight: 900; 
+    color: rgba(255,255,255,0.1); 
+    text-transform: uppercase; 
+    white-space: nowrap; 
+    writing-mode: vertical-rl; 
+    transform: scale(var(--inv-scale, 1)); 
+    transform-origin: top center; 
+    pointer-events: none; 
+    letter-spacing: 5px; 
+}
+
+/* СЕТКА (ZOOM) */
+.year-marker {
+    position: absolute;
+    border-left: calc(1px * var(--inv-scale, 1)) dashed rgba(255, 255, 255, 0.15);
+    pointer-events: none;
+    z-index: 1;
+    display: none;
+}
+
+.year-text {
+    position: absolute;
+    left: 8px;
+    transform: scale(var(--inv-scale, 1));
+    transform-origin: top left;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+.step-50 {
+    border-left-color: rgba(255, 255, 255, 0.05);
+}
+
+.step-50 .year-text {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.step-100 {
+    border-left-color: rgba(255, 255, 255, 0.15);
+}
+
+.step-100 .year-text {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.step-500 {
+    border-left-style: solid;
+    border-left-color: rgba(255, 255, 255, 0.2);
+}
+
+.step-500 .year-text {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.step-1000,
+.step-5000,
+.step-10000 {
+    border-left: calc(2px * var(--inv-scale, 1)) solid rgba(255, 255, 255, 0.4);
+}
+
+.step-1000 .year-text,
+.step-5000 .year-text,
+.step-10000 .year-text {
+    font-size: 18px;
+    color: #fff;
+    text-shadow: 0 0 5px #000;
+}
+
+#viewport[data-zoom="50"] .step-50,
+#viewport[data-zoom="50"] .step-100,
+#viewport[data-zoom="50"] .step-500,
+#viewport[data-zoom="50"] .step-1000,
+#viewport[data-zoom="50"] .step-5000,
+#viewport[data-zoom="50"] .step-10000 {
+    display: block;
+}
+
+#viewport[data-zoom="100"] .step-100,
+#viewport[data-zoom="100"] .step-500,
+#viewport[data-zoom="100"] .step-1000,
+#viewport[data-zoom="100"] .step-5000,
+#viewport[data-zoom="100"] .step-10000 {
+    display: block;
+}
+
+#viewport[data-zoom="500"] .step-500,
+#viewport[data-zoom="500"] .step-1000,
+#viewport[data-zoom="500"] .step-5000,
+#viewport[data-zoom="500"] .step-10000 {
+    display: block;
+}
+
+#viewport[data-zoom="1000"] .step-1000,
+#viewport[data-zoom="1000"] .step-5000,
+#viewport[data-zoom="1000"] .step-10000 {
+    display: block;
+}
+
+#viewport[data-zoom="5000"] .step-5000,
+#viewport[data-zoom="5000"] .step-10000 {
+    display: block;
+}
+
+#viewport[data-zoom="10000"] .step-10000 {
+    display: block;
+}
+
+.equator-line {
+    position: absolute;
+    height: calc(1px * var(--inv-scale, 1));
+    background: rgba(255, 255, 255, 0.3);
+    pointer-events: none;
+    z-index: 1;
+    transition: top 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ИНТЕРАКТИВНЫЕ ФАКТЫ И ТУЛТИПЫ */
+.fact-marker {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: #e91e63;
+    color: white;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(233, 30, 99, 0.9);
+    transition: transform 0.3s, background 0.3s, box-shadow 0.3s;
+}
+
+.fact-marker:hover {
+    transform: translate(-50%, -50%) scale(1.3);
+    background: #f06292;
+}
+
+.fact-marker.active-fact {
+    transform: translate(-50%, -50%) scale(1.6);
+    background: #ffeb3b;
+    color: #000;
+    box-shadow: 0 0 30px #ffeb3b;
+    z-index: 1000;
+    border: 2px solid #000;
+}
+
+#fact-card {
+    position: absolute;
+    bottom: 85px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(25, 28, 35, 0.95);
+    padding: 25px;
+    border-radius: 16px;
+    border: 1px solid rgba(233, 30, 99, 0.4);
+    text-align: center;
+    width: 450px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 30px rgba(233, 30, 99, 0.15);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s, transform 0.4s;
+    z-index: 95;
+    backdrop-filter: blur(10px);
+}
+
+#fact-card.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+#fact-card h3 {
+    margin: 0 0 10px 0;
+    color: #fff;
+    font-size: 22px;
+}
+
+#fact-card .fact-year {
+    font-size: 14px;
+    color: #e91e63;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+#fact-card p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #ccc;
+}
+
+#facts-nav {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(25, 28, 35, 0.95);
+    padding: 12px 20px;
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    z-index: 100;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+#facts-nav.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.nav-btn {
+    background: #1a1a1a;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 13px;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: #61dafb;
+    color: #000;
+}
+
+.nav-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#fact-info-display {
+    font-size: 14px;
+    color: #61dafb;
+    font-weight: 600;
+    min-width: 140px;
+    text-align: center;
+}
+
+#btn-jump-composers {
+    background: #330f1d;
+    border-color: #e91e63;
+}
+
+#btn-jump-composers:hover {
+    background: #c2185b;
+    color: white;
+}
+
+#tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    background: rgba(15, 17, 21, 0.95);
+    color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    font-size: 14px;
+    line-height: 1.6;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.1s;
+    min-width: 200px;
+}
+
+.tooltip-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #61dafb;
+    margin-bottom: 5px;
+}
+
+.composer-block.alive {
+    border-right: none;
+    /* Создаем маску, которая делает правые 15% блока полупрозрачными */
+    -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%);
+    mask-image: linear-gradient(to right, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%);
+}
+
+.current-time-line { 
+    position: absolute; 
+    width: 2px; 
+    background-color: #ff3333; 
+    box-shadow: 0 0 10px rgba(255, 51, 51, 0.8); 
+    z-index: 50; 
+    pointer-events: none; 
+}
+
+/* СТИЛИ ДЛЯ ПОДКАТЕГОРИЙ И СВОРАЧИВАНИЯ */
+.sub-category { margin-left: 24px !important; position: relative; opacity: 0.9; }
+.sub-category::after { content: ''; position: absolute; left: -19px; width: 8px; height: 1px; background: rgba(255,255,255,0.2); }
+
+/* Стили для стрелочки */
+.collapse-toggle { 
+    display: inline-block; width: 16px; font-size: 10px; color: #888; 
+    cursor: pointer; text-align: center; margin-right: 6px; 
+    user-select: none; transition: color 0.2s; 
+}
+.collapse-toggle:hover { color: #fff; }
+.collapsed-group { display: none !important; }
+
+#ctrl-era { 
+    max-height: none; 
+    overflow-y: visible; 
+}
+
+#btn-close-menu {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 16px;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.2s;
+    padding: 0;
+}
+#btn-close-menu:hover {
+    color: #ff3333; /* При наведении становится красным */
+    transform: scale(1.2);
+}
+
+/* =========================================
+   КНОПКИ СОЦСЕТЕЙ В ПРАВОМ НИЖНЕМ УГЛУ
+   ========================================= */
+#social-links {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+}
+
+.social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background: rgba(25, 28, 35, 0.95);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+}
+
+/* Эффект выезжания влево при наведении */
+.social-btn:hover {
+    transform: translateX(-5px) scale(1.05);
+}
+
+/* Фирменные цвета при наведении */
+.social-btn.ozon:hover { background: #005bff; color: #fff; border-color: #005bff; }
+.social-btn.boosty:hover { background: #f15f2c; color: #fff; border-color: #f15f2c; }
+.social-btn.telegram:hover { background: #2AABEE; color: #fff; border-color: #2AABEE; }
+.social-btn.instagram:hover { background: #E1306C; color: #fff; border-color: #E1306C; }
+.social-btn.youtube:hover { background: #FF0000; color: #fff; border-color: #FF0000; }
+.social-btn.donate:hover { background: #FFDD00; color: #000; border-color: #FFDD00; }
