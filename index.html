@@ -35,11 +35,39 @@
         footer { margin-top: auto; padding-top: 8vh; }
         .footer-mark { font-size: 0.7rem; letter-spacing: 0.4em; color: #bcb; }
 
+        /* Закрытый раздел (Форма ввода) */
+        .secret-box { 
+            display: flex; align-items: baseline; gap: 15px; 
+            position: relative; /* Делаем блок якорем для всплывающей ошибки */
+        }
+        #pass-input { 
+            background: transparent; border: none; border-bottom: 1px solid #ccc; 
+            color: #000; font-family: inherit; font-size: 0.75rem; letter-spacing: 0.2em; 
+            padding: 5px 0; outline: none; width: 140px; text-transform: uppercase; 
+            transition: border-color 0.3s; border-radius: 0;
+        }
+        #pass-input:focus { border-bottom: 1px solid #000; }
+        #pass-input::placeholder { color: #ccc; }
+        
+        .secret-btn { 
+            font-size: 0.75rem; letter-spacing: 0.15em; color: #999; 
+            cursor: pointer; transition: color 0.2s; 
+        }
+        .secret-btn:hover { color: #000; }
+        
+        .pass-error { 
+            position: absolute; /* МАГИЯ: Вырываем текст из физического пространства */
+            top: 100%; left: 0; /* Привязываем строго под линией инпута */
+            font-size: 0.65rem; color: #999; letter-spacing: 0.1em; 
+            text-transform: uppercase; margin-top: 8px; 
+            opacity: 0; transition: opacity 0.2s; pointer-events: none; 
+        }
+
         @media (max-width: 600px) { main { padding: 0 20px; } .row-meta { display: none; } }
     </style>
 </head>
 <body>
-
+    <audio id="ambient-music" src="background/background.mp3" loop preload="auto"></audio>
     <header>
         <h1 class="brand-title">Chiline</h1>
     </header>
@@ -74,14 +102,20 @@
 
         <div class="row">
             <div class="trigger">
-                <span class="row-title">Великие композиторы</span>
+                <span class="row-title">Таймлайн с композиторами</span>
                 <div class="trigger-right">
                     <span class="row-meta">История / 03</span>
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 4v16m-8-8h16" /></svg>
                 </div>
             </div>
             <div class="content"><div class="inner"><div class="links">
-                <a href="timeline/" class="sub-link">Таймлайн</a>
+                
+                <div class="secret-box">
+                    <input type="password" id="pass-input" placeholder="КОД ДОСТУПА" autocomplete="off">
+                    <span class="secret-btn" id="pass-btn">ВВОД</span>
+                </div>
+                <div id="pass-error" class="pass-error">В доступе отказано</div>
+
             </div></div></div>
         </div>
     </main>
@@ -89,8 +123,54 @@
     <footer>
         <span class="footer-mark">MDXXVI</span>
     </footer>
-
+    <audio id="ambient-music" src="background/background.mp3" loop preload="auto"></audio>
     <script>
+        // Секретный доступ к Таймлайну
+        const passInput = document.getElementById('pass-input');
+        const passBtn = document.getElementById('pass-btn');
+        const passError = document.getElementById('pass-error');
+
+        const checkCode = () => {
+            // ЗДЕСЬ УКАЗЫВАЕТСЯ ПАРОЛЬ (обязательно заглавными буквами)
+            if (passInput.value.toUpperCase() === '12345') {
+                window.location.href = 'timeline/'; // Перенаправление в папку
+            } else {
+                // Если пароль неверный
+                passError.style.opacity = '1';
+                setTimeout(() => passError.style.opacity = '0', 2000);
+                passInput.value = ''; // Очищаем поле
+            }
+        };
+
+        // --- ФОНОВАЯ МУЗЫКА ---
+        const ambientAudio = document.getElementById('ambient-music');
+        
+        // Устанавливаем громкость (0.15 = 15%. Значение 1.0 = 100%)
+        ambientAudio.volume = 0.15; 
+
+        // Функция запуска
+        const startAmbient = () => {
+            // Пытаемся запустить музыку
+            ambientAudio.play().catch(() => {
+                // Если браузер все еще блокирует, ничего не делаем, ждем следующего клика
+            });
+            
+            // Если музыка заиграла, удаляем этот "слушатель", чтобы команда не повторялась
+            if (!ambientAudio.paused) {
+                document.removeEventListener('click', startAmbient);
+            }
+        };
+
+        // Ловим самый первый клик пользователя в ЛЮБОМ месте страницы
+        document.addEventListener('click', startAmbient);
+
+        // Запуск проверки по клику на "ВВОД" или по нажатию Enter на клавиатуре
+        if(passBtn && passInput) {
+            passBtn.addEventListener('click', checkCode);
+            passInput.addEventListener('keypress', e => { 
+                if (e.key === 'Enter') checkCode(); 
+            });
+        }
         document.addEventListener('click', e => {
             let t = e.target.closest('.trigger');
             if (!t) return;
