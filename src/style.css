@@ -1,0 +1,174 @@
+/* Базовые системные настройки интерфейса */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: #fff;
+  color: #000;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Шапка сайта */
+header {
+  text-align: center;
+  margin: 15vh 0 8vh;
+}
+
+.brand-title {
+  font-size: 2.2rem;
+  font-weight: 300;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  text-indent: 0.5em; /* Компенсирует отступ letter-spacing у последней буквы */
+}
+
+/* Основной контейнер и строки аккордеона */
+main {
+  width: 100%;
+  max-width: 700px;
+  border-inline: 1px solid #000;
+  padding: 0 40px;
+}
+
+.row {
+  width: 100%;
+}
+
+.trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 20px 0;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.row-title {
+  font-size: 1.05rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.trigger-right {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+}
+
+.row-meta {
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #999;
+  transition: color 0.3s linear;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  color: #999;
+  position: relative;
+  top: 2px;
+  transition: color 0.3s linear, transform 0.3s linear;
+}
+
+.trigger:hover .row-meta,
+.trigger:hover .icon,
+.row.is-open .icon {
+  color: #000;
+}
+
+.row.is-open .icon {
+  transform: rotate(45deg);
+}
+
+.content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s linear;
+}
+
+.row.is-open .content {
+  grid-template-rows: 1fr;
+}
+
+.inner {
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.2s linear;
+}
+
+.row.is-open .inner {
+  opacity: 1;
+  transition: opacity 0.3s linear;
+}
+
+.links {
+  padding: 0 0 30px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sub-link {
+  width: fit-content;
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #666;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.sub-link:hover {
+  color: #000;
+}
+
+footer {
+  margin-top: auto;
+  padding-top: 8vh;
+}
+
+.footer-mark {
+  font-size: 0.7rem;
+  letter-spacing: 0.4em;
+  color: #bcb;
+}
+
+/* Стили для закрытых разделов */
+.sub-link.locked {
+    color: #888; /* Серый цвет для текста */
+    pointer-events: none; /* Запрещает любые клики по ссылке */
+    cursor: default; /* Убирает курсор "палец" */
+    display: inline-flex; 
+    align-items: center; /* Выравниваем замочек по центру текста */
+    gap: 8px; /* Расстояние между текстом и замочком */
+    text-decoration: none;
+}
+
+/* Стили для самого замочка */
+.lock-icon {
+    width: 14px;
+    height: 14px;
+    stroke: #888; /* Серый цвет замочка */
+}
+
+@media (max-width: 600px) {
+  main {
+    padding: 0 20px;
+  }
+  .row-meta {
+    display: none;
+  }
+}

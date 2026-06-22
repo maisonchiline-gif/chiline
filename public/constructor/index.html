@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конструктор Музыкальных Форм</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://w.soundcloud.com/player/api.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&display=swap');
+
+        :root {
+            /* Мягкая, низкоконтрастная палитра */
+            --bg-color: #f4f5f7; 
+            --panel-bg: #ffffff;
+            --accent-color: #666666; 
+            --text-color: #2b2b2b;
+            --border-color: #d0d0d0; 
+            --hover-bg: #f8f9fa;
+            --muted-text: #737373;
+        }
+
+        html {
+            background: var(--bg-color);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color); 
+            color: var(--text-color);
+            margin: 0; 
+            /* Собираем интерфейс в центре за счет 8vw отступов по бокам */
+            padding: 45px 8vw 25px 8vw; 
+            display: flex; gap: 20px; height: 100vh; box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Идеально четкая ссылка "На главную" */
+        .back-link {
+            position: absolute; top: 15px; left: 8vw; 
+            color: var(--muted-text); text-decoration: none; 
+            font-size: 13px; font-weight: 500;
+            transition: color 0.25s ease; z-index: 100;
+        }
+        .back-link:hover { color: var(--text-color); }
+
+        .panel {
+            background: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 6px; padding: 25px; display: flex; flex-direction: column;
+            overflow-y: auto; overflow-x: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        }
+        .panel-tree { flex: 1.2; }
+        .panel-editor { flex: 1; }
+        .panel-json { flex: 1; background: var(--bg-color); box-shadow: none; border: 1px dashed var(--border-color); }
+        
+        h2 { 
+            margin-top: 0; font-size: 1.1rem; 
+            border-bottom: 1px solid var(--border-color); 
+            padding-bottom: 12px; font-weight: 600; color: #111;
+        }
+        
+        ul { 
+            list-style-type: none; padding-left: 22px; margin: 0; 
+            min-height: 0; border-left: 1px solid #e2e2e2; transition: border-color 0.3s ease;
+        }
+        ul:empty { padding-bottom: 2px; }
+        .tree-root > ul { padding-left: 0; border-left: none; }
+        ul.sortable-dragover { border-left: 2px dashed var(--accent-color); background: #fdfdfd; }
+
+        li { margin: 6px 0; } 
+        li.collapsed > ul { display: none; }
+
+        /* Плавные и читабельные элементы дерева */
+        .node-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--panel-bg); padding: 8px 12px; border-radius: 4px;
+            cursor: grab; border: 1px solid var(--border-color); transition: all 0.25s ease;
+            user-select: none; font-size: 14px;
+        }
+        .node-item:active { cursor: grabbing; }
+        .node-item:hover { background: var(--hover-bg); border-color: #b0b0b0; }
+        .node-item.selected { 
+            background: #e8e8e8; color: var(--text-color); 
+            border-color: #888888; 
+        }
+        
+        .toggle-btn {
+            display: inline-block; width: 20px; text-align: center; font-size: 11px;
+            color: var(--muted-text); cursor: pointer; margin-right: 6px; transition: transform 0.25s ease, color 0.25s ease;
+        }
+        .toggle-btn:hover { color: #111; }
+        .node-item.selected .toggle-btn { color: #555; }
+        .node-item.selected .toggle-btn:hover { color: #111; }
+        .toggle-btn.empty { opacity: 0.3; cursor: default; }
+        li.collapsed > .node-item .toggle-btn:not(.empty) { transform: rotate(-90deg); }
+
+        .node-actions button { 
+            background: none; border: none; color: inherit; 
+            cursor: pointer; font-size: 16px; margin-left: 5px; opacity: 0.4; transition: opacity 0.25s ease;
+        }
+        .node-actions button:hover { opacity: 1; }
+        
+        .sortable-ghost { opacity: 0.5; background-color: #f0f0f0 !important; border-style: dashed; }
+        .sortable-drag { cursor: grabbing !important; }
+
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--muted-text); }
+        
+        /* Читабельные инпуты */
+        input, textarea {
+            width: 100%; padding: 10px 12px; background: var(--panel-bg); color: var(--text-color);
+            border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box;
+            font-family: inherit; font-size: 14px; transition: all 0.25s ease;
+        }
+        textarea { resize: vertical; min-height: 60px; line-height: 1.4; }
+        input:focus, textarea:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(0,0,0,0.05); }
+        input:disabled { opacity: 0.5; cursor: not-allowed; border-style: dashed; background: var(--bg-color); }
+        
+        .input-group { display: flex; gap: 10px; }
+        .input-group input { flex: 1; }
+        .input-group button { white-space: nowrap; }
+
+        /* Мягкие кнопки */
+        .btn {
+            background: var(--panel-bg); color: var(--text-color); border: 1px solid var(--border-color); padding: 10px 15px;
+            border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 14px;
+            width: 100%; transition: all 0.25s ease;
+        }
+        .btn:hover { background: var(--hover-bg); border-color: var(--accent-color); color: #111; }
+        .btn-small { padding: 8px 12px; width: auto; font-size: 13px; }
+        
+        pre { margin: 0; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; color: var(--text-color); white-space: pre-wrap; word-wrap: break-word;}
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; flex-direction: column; align-items: flex-start;}
+        
+        .player-container { margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        .sc-controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .sc-slider { flex: 1; cursor: pointer; accent-color: var(--accent-color); }
+        .sc-time-display { font-size: 13px; font-family: "Old Standard TT", serif; color: var(--text-color); font-variant-numeric: tabular-nums; min-width: 42px; text-align: right; }
+        
+        .multi-select-notice {
+            background: #fafafa; border: 1px dashed var(--border-color);
+            padding: 12px; border-radius: 4px; color: var(--text-color); font-size: 12px; font-weight: 500;
+            margin-bottom: 15px; display: none; text-align: center;
+        }
+
+        .toolbar-buttons { display: flex; gap: 8px; width: 100%; }
+        .toolbar-buttons .btn { 
+            flex: 1; margin: 0; text-align: center; 
+            justify-content: center; display: flex; align-items: center; padding: 8px 0;
+        }
+
+        /* Читабельные категории и кнопки заготовок */
+        .preset-section { margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 15px; }
+        .preset-category { font-size: 13px; font-weight: 600; color: var(--muted-text); margin: 18px 0 10px 0; border-bottom: 1px dotted #d0d0d0; padding-bottom: 6px;}
+        .preset-category:first-of-type { margin-top: 12px; }
+        .presets-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        
+        .preset-btn {
+            background: var(--panel-bg); color: var(--text-color); border: 1px solid var(--border-color);
+            padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer;
+            transition: all 0.25s ease; position: relative;
+        }
+        .preset-btn:hover { 
+            background: var(--hover-bg);
+            border-color: var(--accent-color);
+            color: #111; 
+            z-index: 1000; 
+        }        
+        
+        /* Плавные всплывающие подсказки */
+        #global-tooltip {
+            position: fixed;
+            background: #ffffff; color: #222; padding: 10px 14px; border-radius: 4px;
+            font-size: 12px; line-height: 1.4; white-space: normal; max-width: 220px;
+            text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.25s ease;
+            border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 9999;
+        }
+        
+        /* Мягкие скроллбары */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); border-left: 1px solid #eaeaea; }
+        ::-webkit-scrollbar-thumb { background: #cccccc; border: 2px solid var(--bg-color); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #aaaaaa; }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">← На главную</a>
+    <div class="panel panel-tree">
+        <div class="player-container">
+            <h2>Плеер</h2>
+            <div class="input-group" style="margin-bottom: 10px;">
+                <input type="text" id="sc-url" placeholder="Ссылка на трек SoundCloud...">
+                <button class="btn btn-small" id="btn-load-sc" style="width: auto;">Загрузить</button>
+            </div>
+            <iframe id="sc-widget" width="100%" height="100" scrolling="no" frameborder="no" allow="autoplay" 
+                src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fsoundcloud.com%2Fprimeartonline-piano-covers%2Frachmaninoff-piano-concerto-no-2-zimerman&color=%23666666&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false">
+            </iframe>
+            <div class="sc-controls">
+                <input type="range" id="sc-slider" class="sc-slider" min="0" max="100" value="0" step="0.1">
+                <span id="sc-time-display" class="sc-time-display">00:00</span>
+            </div>
+        </div>
+
+        <h2>Структура произведения</h2>
+        <div id="tree-container" class="tree-root"></div>
+    </div>
+
+    <div class="panel panel-editor">
+        <h2>Свойства элемента</h2>
+        
+        <div id="multi-notice" class="multi-select-notice">
+            Выделено элементов: <b id="multi-count">0</b>.<br>Изменения свойств применятся ко всем!
+        </div>
+
+        <div id="editor-container" style="display: none;">
+            
+            <div class="form-group">
+                <label>Название (name)</label>
+                <input type="text" id="prop-name" placeholder="Например: Экспозиция" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Кратко (short)</label>
+                <input type="text" id="prop-short" placeholder="Например: Гп" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Размер / Такты (value)</label>
+                <input type="number" id="prop-value" placeholder="Например: 8" min="0">
+            </div>
+            <div class="form-group">
+                <label>Таймкод (time)</label>
+                <div class="input-group">
+                    <input type="text" id="prop-time" placeholder="ММ:СС (Например: 01:23)" autocomplete="off">
+                    <button class="btn btn-small" id="btn-capture-time">Захватить</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Комментарий (comment)</label>
+                <textarea id="prop-comment" placeholder="Дополнительные заметки к разделу..."></textarea>
+            </div>
+
+            <div class="preset-section">
+                <label style="font-size: 14px; font-weight: 600; color: var(--text-color); margin-bottom: 0;">База заготовок формы:</label>
+                
+                <div class="preset-category">1. Макроуровень (Глобальная структура)</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-name="Цикл" data-short="Цикл" data-tooltip="Самая крупная форма, объединяющая несколько частей">Цикл</button>
+                    <button class="preset-btn" data-name="Часть" data-short="Часть" data-tooltip="Крупный самостоятельный раздел цикла">Часть</button>
+                    <button class="preset-btn" data-name="Раздел" data-short="Раздел" data-tooltip="Универсальный термин для любого крупного сегмента внутри части">Раздел</button>
+                </div>
+
+                <div class="preset-category">2. Синтаксис (Микроуровень)</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-name="Период" data-short="Пер." data-tooltip="Наименьшая форма, выражающая относительно завершенную музыкальную мысль">Период</button>
+                    <button class="preset-btn" data-name="Предложение" data-short="Предл." data-tooltip="Крупная часть периода, относительно завершенная мысль">Предложение</button>
+                    <button class="preset-btn" data-name="Фраза" data-short="Фр." data-tooltip="Часть предложения, объединенная одним дыханием или лигой">Фраза</button>
+                    <button class="preset-btn" data-name="Мотив" data-short="Мот." data-tooltip="Мельчайшая смысловая единица (обычно с одним сильным ударением)">Мотив</button>
+                </div>
+
+                <div class="preset-category">3. Семантические единицы</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-name="Тема" data-short="Тема" data-tooltip="Материал, который несет главную музыкальную мысль, независимо от масштаба">Тема</button>
+                    <button class="preset-btn" data-name="Лейтмотив" data-short="Лейт." data-tooltip="Характеристическая тема или мотив, стойко связанная с конкретным образом/идеей">Лейтмотив</button>
+                </div>
+
+                <div class="preset-category">4. Сонатная форма (Разделы)</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-name="Вступление" data-short="Вступ." data-tooltip="Подготовительный раздел на уровне всей формы">Вступление</button>
+                    <button class="preset-btn" data-name="Экспозиция" data-short="Эксп." data-tooltip="Первый показ основных тем">Экспозиция</button>
+                    <button class="preset-btn" data-name="Разработка" data-short="Разр." data-tooltip="Раздел интенсивного мотивного развития и тональной неустойчивости">Разработка</button>
+                    <button class="preset-btn" data-name="Реприза" data-short="Реп." data-tooltip="Возвращение тем экспозиции (обычно в главной тональности)">Реприза</button>
+                    <button class="preset-btn" data-name="Кода" data-short="Кода" data-tooltip="Завершающий раздел, итог развития формы">Кода</button>
+                </div>
+
+                <div class="preset-category">5. Сонатная форма (Партии)</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-name="Главная партия" data-short="Гп" data-tooltip="Основная мысль в главной тональности">Главная (гп)</button>
+                    <button class="preset-btn" data-name="Связующая партия" data-short="Сп" data-tooltip="Ход-переход, уводящий в новую тональность">Связующая (сп)</button>
+                    <button class="preset-btn" data-name="Побочная партия" data-short="Пп" data-tooltip="Контрастная мысль в подчиненной тональности">Побочная (пп)</button>
+                    <button class="preset-btn" data-name="Заключительная партия" data-short="Зп" data-tooltip="Утверждение новой тональности и завершение раздела">Заключительная (зп)</button>
+                </div>
+
+                <div class="preset-category">6. Рондо, Вариации, Простые формы</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-name="Рефрен" data-short="Рефрен" data-tooltip="Неизменно возвращающаяся главная тема рондо">Рефрен</button>
+                    <button class="preset-btn" data-name="Эпизод" data-short="Эп." data-tooltip="Контрастный раздел между проведениями рефрена">Эпизод</button>
+                    <button class="preset-btn" data-name="Вариация" data-short="Вар." data-tooltip="Измененное повторение темы">Вариация</button>
+                    <button class="preset-btn" data-name="Строфа" data-short="Строфа" data-tooltip="Куплет в вокальной или куплетной форме">Строфа</button>
+                    <button class="preset-btn" data-name="Середина" data-short="Сер." data-tooltip="Второй раздел простых/сложных форм (контрастная или развивающая)">Середина</button>
+                </div>
+
+                <div class="preset-category">7. Полифонические структуры</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-name="Тема (вождь)" data-short="Вождь" data-tooltip="Первое проведение темы в фуге">Вождь</button>
+                    <button class="preset-btn" data-name="Ответ (спутник)" data-short="Ответ" data-tooltip="Имитация темы в другой тональности">Спутник</button>
+                    <button class="preset-btn" data-name="Противосложение" data-short="П-слож." data-tooltip="Контрапункт, звучащий одновременно с проведением темы">Противослож.</button>
+                    <button class="preset-btn" data-name="Интермедия" data-short="Интерм." data-tooltip="Развивающий раздел между проведениями тем в фуге">Интермедия</button>
+                    <button class="preset-btn" data-name="Стретта" data-short="Стретта" data-tooltip="Сжатое проведение тем с наложением друг на друга">Стретта</button>
+                    <button class="preset-btn" data-name="Фугато" data-short="Фугато" data-tooltip="Внедрение полифонического принципа в неполифоническую форму">Фугато</button>
+                    <button class="preset-btn" data-name="Органный пункт" data-short="Орг.п." data-tooltip="Длительно выдержанный звук (часто в басу)">Органный пункт</button>
+                </div>
+
+                <div class="preset-category">8. Процессы, переходы и солирование</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-name="Связка" data-short="Связка" data-tooltip="Короткий ход между темами вне сонатной формы">Связка</button>
+                    <button class="preset-btn" data-name="Предыкт" data-short="Предыкт" data-tooltip="Зона интенсивной подготовки появления новой темы (часто на доминанте)">Предыкт</button>
+                    <button class="preset-btn" data-name="Секвенция" data-short="Секв." data-tooltip="Принцип развития: перемещение мотива на другую высоту">Секвенция</button>
+                    <button class="preset-btn" data-name="Звено секвенции" data-short="Звено" data-tooltip="Один шаг (звено) секвенции">Звено секвенции</button>
+                    <button class="preset-btn" data-name="Каденция солиста" data-short="Кад.сол." data-tooltip="Свободная виртуозная вставка в инструментальном концерте">Каденция солиста</button>
+                </div>
+
+                <div class="preset-category">9. Масштабно-тематические преобразования</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-name="Вставка" data-short="Вставка" data-tooltip="Внезапное появление нового материала внутри построения">Вставка</button>
+                    <button class="preset-btn" data-name="Расширение" data-short="Расш." data-tooltip="Растягивание формы изнутри, оттягивание наступления каденции">Расширение</button>
+                    <button class="preset-btn" data-name="Дополнение" data-short="Доп." data-tooltip="Дополнительное развитие или утверждение уже после состоявшейся каденции">Дополнение</button>
+                </div>
+
+                <div class="preset-category">10. Пунктуация и микроанализ</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-name="Каденция" data-short="Кад." data-tooltip="Гармоническая остановка и завершение мысли (половинная, полная, прерванная)">Каденция</button>
+                    <button class="preset-btn" data-name="Интонация" data-short="Интон." data-tooltip="Мельчайшая осмысленная интонационная частица, меньше мотива">Интонация</button>
+                    <button class="preset-btn" data-name="Кульминация" data-short="Кульм." data-tooltip="Важнейшая точка наивысшего напряжения">Кульминация</button>
+                    <button class="preset-btn" data-name="Вспомогательная партия" data-short="Вп" data-tooltip="Самостоятельная зона между связующей и побочной (напр., у Брукнера)">Вспомог. партия</button>
+                    <button class="preset-btn" data-name="Элизия (наложение)" data-short="Элизия" data-tooltip="Окончание одной фразы одновременно является началом следующей">Элизия / Наложение</button>
+                    <button class="preset-btn" data-name="Отыгрыш" data-short="Отыгр." data-tooltip="1-2 такта аккомпанемента до вступления основной мелодии">Отыгрыш</button>
+                </div>
+            </div>
+
+        </div>
+        <div id="empty-state" style="color: #888; font-size: 13px; text-align: center; margin-top: 50px;">
+            Выберите элемент в дереве
+        </div>
+    </div>
+
+    <div class="panel panel-json">
+        <div class="header-flex">
+            <h2 style="border: none; margin: 0; padding: 0; width: 100%;">JSON Код</h2>
+            <div class="toolbar-buttons">
+                <label class="btn btn-small" style="cursor:pointer;">
+                    Импорт
+                    <input type="file" id="btn-import" accept=".json" style="display:none;">
+                </label>
+                <button class="btn btn-small" id="btn-copy">Копировать</button>
+                <button class="btn btn-small" id="btn-download">Экспорт</button>
+            </div>
+        </div>
+        <pre id="json-output"></pre>
+    </div>
+
+    <script>
+        // --- 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
+        let structureData = { id: generateId(), name: "Название произведения", children: [], collapsed: false };
+        
+        let selectedNodeIds = new Set([structureData.id]);
+        let lastSelectedId = structureData.id; 
+        let anchorNodeId = structureData.id; 
+        
+        let scPlayer = null;
+        let currentScTime = 0; 
+        let isScrubbing = false; 
+
+        function generateId() { return Math.random().toString(36).substr(2, 9); }
+
+        function findNodeAndParent(node, id, parent = null, index = -1) {
+            if (node.id === id) return { node, parent, index };
+            if (node.children) {
+                for (let i = 0; i < node.children.length; i++) {
+                    const result = findNodeAndParent(node.children[i], id, node, i);
+                    if (result) return result;
+                }
+            }
+            return null;
+        }
+
+        function formatTimeSC(sec) {
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // --- 2. SOUNDCLOUD ПЛЕЕР И ПОЛЗУНОК ---
+        const scSlider = document.getElementById('sc-slider');
+        const scTimeDisplay = document.getElementById('sc-time-display');
+
+        function initSoundCloud() {
+            const iframe = document.getElementById('sc-widget');
+            scPlayer = SC.Widget(iframe);
+            scPlayer.bind(SC.Widget.Events.READY, function() {
+                scPlayer.getDuration(function(duration) {
+                    scSlider.max = duration / 1000;
+                });
+                
+                scPlayer.bind(SC.Widget.Events.PLAY_PROGRESS, function(e) {
+                    currentScTime = e.currentPosition / 1000;
+                    if (!isScrubbing) {
+                        scSlider.value = currentScTime;
+                        scTimeDisplay.textContent = formatTimeSC(currentScTime);
+                    }
+                });
+            });
+        }
+        initSoundCloud();
+
+        scSlider.addEventListener('mousedown', () => isScrubbing = true);
+        scSlider.addEventListener('mouseup', () => isScrubbing = false);
+        scSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            scTimeDisplay.textContent = formatTimeSC(val);
+            scPlayer.seekTo(val * 1000);
+        });
+
+        document.getElementById('btn-load-sc').onclick = () => {
+            const url = document.getElementById('sc-url').value.trim();
+            if(url) {
+                const colorHex = "%23666666"; // Сменили акцентный цвет плеера под новый дизайн
+                scPlayer.load(url, { auto_play: false, hide_related: true, show_comments: false, show_user: false, show_reposts: false, visual: false });
+            }
+        };
+
+        document.getElementById('btn-capture-time').onclick = () => {
+            const timeInput = document.getElementById('prop-time');
+            timeInput.value = formatTimeSC(currentScTime);
+            timeInput.dispatchEvent(new Event('input')); 
+        };
+
+        // --- 3. ИМПОРТ JSON ---
+        document.getElementById('btn-import').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    let importedData = JSON.parse(event.target.result);
+                    if (Array.isArray(importedData)) {
+                        importedData = { name: "Загруженный файл", children: importedData };
+                    }
+                    function addIds(node) {
+                        node.id = generateId();
+                        node.collapsed = false; 
+                        if (node.children) {
+                            if (!Array.isArray(node.children)) node.children = [];
+                            node.children.forEach(addIds);
+                        }
+                    }
+                    addIds(importedData);
+                    structureData = importedData;
+                    selectNode(structureData.id);
+                } catch (err) {
+                    alert('Ошибка парсинга JSON файла. Проверьте правильность структуры.');
+                }
+                e.target.value = ''; 
+            };
+            reader.readAsText(file);
+        });
+
+        // --- 4. ОТРИСОВКА ---
+        function renderTree(node, parentUl) {
+            const li = document.createElement('li');
+            li.setAttribute('data-id', node.id); 
+            if (node.collapsed) li.classList.add('collapsed'); 
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `node-item ${selectedNodeIds.has(node.id) ? 'selected' : ''}`;
+            itemDiv.onclick = (e) => { e.stopPropagation(); selectNode(node.id, e); };
+
+            const leftContainer = document.createElement('div');
+            leftContainer.style.display = 'flex';
+            leftContainer.style.alignItems = 'center';
+
+            const toggleBtn = document.createElement('span');
+            toggleBtn.className = 'toggle-btn';
+            if (node.children && node.children.length > 0) {
+                toggleBtn.innerHTML = '▼';
+                toggleBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    node.collapsed = !node.collapsed;
+                    updateUI();
+                };
+            } else {
+                toggleBtn.innerHTML = '•';
+                toggleBtn.classList.add('empty');
+            }
+            leftContainer.appendChild(toggleBtn);
+
+            const titleSpan = document.createElement('span');
+            let label = node.name || "Без названия";
+            if (node.value) label += ` <small style="color:#888;">(${node.value} т.)</small>`;
+            if (node.time) label += ` <small style="color:#888;">[${node.time}]</small>`;
+            if (node.comment) label += ` <span title="Есть комментарий" style="font-size:11px; opacity: 0.7;">💬</span>`;
+            titleSpan.innerHTML = label;
+            leftContainer.appendChild(titleSpan);
+            
+            itemDiv.appendChild(leftContainer);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'node-actions';
+            
+            const btnAdd = document.createElement('button');
+            btnAdd.innerHTML = '+';
+            btnAdd.title = "Добавить вложенный элемент";
+            btnAdd.onclick = (e) => { 
+                e.stopPropagation(); 
+                node.collapsed = false; 
+                addChild(node.id); 
+            };
+            actionsDiv.appendChild(btnAdd);
+
+            if (node.id === structureData.id) {
+                itemDiv.style.cursor = 'default';
+                li.classList.add('root-node');
+            } else {
+                const btnDup = document.createElement('button');
+                btnDup.innerHTML = '⧉';
+                btnDup.title = "Дублировать (Ctrl+D / Cmd+D)";
+                btnDup.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    if (!selectedNodeIds.has(node.id)) selectNode(node.id);
+                    duplicateSelectedNodes(); 
+                };
+                actionsDiv.appendChild(btnDup);
+
+                itemDiv.title = "Delete - удалить | Ctrl+D - дублировать | Правый клик - меню";
+                itemDiv.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!selectedNodeIds.has(node.id)) selectNode(node.id);
+                    if (confirm(`Удалить выбранные элементы (${selectedNodeIds.size} шт.)?`)) {
+                        deleteSelectedNodes();
+                    }
+                };
+            }
+            
+            itemDiv.appendChild(actionsDiv);
+            li.appendChild(itemDiv);
+            
+            const childrenUl = document.createElement('ul');
+            if (node.children && node.children.length > 0) {
+                node.children.forEach(child => renderTree(child, childrenUl));
+            }
+            li.appendChild(childrenUl);
+            
+            parentUl.appendChild(li);
+        }
+
+        function rebuildDataFromDOM() {
+            const nodeMap = {};
+            function buildMap(n) {
+                if (!n) return;
+                nodeMap[n.id] = { ...n };
+                if (n.children) n.children.forEach(buildMap);
+            }
+            buildMap(structureData);
+
+            function traverseDOM(li) {
+                const id = li.getAttribute('data-id');
+                const node = nodeMap[id] || { id: id, name: "Unknown", collapsed: false };
+                const result = { ...node };
+                result.children = [];
+                result.collapsed = li.classList.contains('collapsed');
+
+                const ul = Array.from(li.children).find(el => el.tagName === 'UL');
+                if (ul) {
+                    const lis = Array.from(ul.children).filter(el => el.tagName === 'LI');
+                    lis.forEach(childLi => {
+                        const childData = traverseDOM(childLi);
+                        if (childData) result.children.push(childData);
+                    });
+                }
+
+                if (result.children.length === 0) delete result.children;
+                else delete result.value; 
+
+                return result;
+            }
+
+            const rootLi = document.querySelector('#tree-container > ul > li');
+            if (rootLi) structureData = traverseDOM(rootLi);
+        }
+
+        function getFlattenedTree() {
+            const list = [];
+            function traverse(node) {
+                list.push(node.id);
+                if (node.children && !node.collapsed) {
+                    node.children.forEach(traverse);
+                }
+            }
+            traverse(structureData);
+            return list;
+        }
+
+        let sortableInstances = []; 
+
+        function updateUI() {
+            const container = document.getElementById('tree-container');
+            sortableInstances.forEach(s => s.destroy());
+            sortableInstances = [];
+            container.innerHTML = '';
+            
+            const rootUl = document.createElement('ul');
+            renderTree(structureData, rootUl);
+            container.appendChild(rootUl);
+            
+            updateJsonOutput();
+
+            const uls = container.querySelectorAll('li > ul');
+            uls.forEach(ul => {
+                const s = new Sortable(ul, {
+                    group: 'nested', animation: 250, fallbackOnBody: true, swapThreshold: 0.65,
+                    emptyInsertThreshold: 20, ghostClass: 'sortable-ghost',
+                    filter: '.toggle-btn', 
+                    preventOnFilter: false,
+                    onEnd: function () {
+                        rebuildDataFromDOM();
+                        updateUI(); 
+                    }
+                });
+                sortableInstances.push(s);
+            });
+        }
+
+        function updateEditor() {
+            const result = findNodeAndParent(structureData, lastSelectedId);
+            const notice = document.getElementById('multi-notice');
+            
+            if (selectedNodeIds.size > 1) {
+                notice.style.display = 'block';
+                document.getElementById('multi-count').innerText = selectedNodeIds.size;
+            } else {
+                notice.style.display = 'none';
+            }
+
+            if (result) {
+                document.getElementById('editor-container').style.display = 'block';
+                document.getElementById('empty-state').style.display = 'none';
+                
+                document.getElementById('prop-name').value = result.node.name || '';
+                document.getElementById('prop-short').value = result.node.short || '';
+                document.getElementById('prop-comment').value = result.node.comment || ''; 
+                
+                const valueInput = document.getElementById('prop-value');
+                if (result.node.children && result.node.children.length > 0) {
+                    valueInput.value = ''; valueInput.disabled = true;
+                    valueInput.placeholder = "Считается из дочерних";
+                } else {
+                    valueInput.value = result.node.value || ''; valueInput.disabled = false;
+                    valueInput.placeholder = "Например: 8";
+                }
+                document.getElementById('prop-time').value = result.node.time || '';
+            } else {
+                document.getElementById('editor-container').style.display = 'none';
+                document.getElementById('empty-state').style.display = 'block';
+            }
+        }
+
+        // --- 5. ВЫДЕЛЕНИЕ И НАВИГАЦИЯ ---
+        function selectNode(id, event = null) {
+            const flatList = getFlattenedTree();
+
+            if (event && event.shiftKey && anchorNodeId) {
+                const startIdx = flatList.indexOf(anchorNodeId);
+                const endIdx = flatList.indexOf(id);
+                if (startIdx !== -1 && endIdx !== -1) {
+                    const min = Math.min(startIdx, endIdx);
+                    const max = Math.max(startIdx, endIdx);
+                    selectedNodeIds.clear();
+                    for (let i = min; i <= max; i++) {
+                        selectedNodeIds.add(flatList[i]);
+                    }
+                }
+            } else if (event && (event.ctrlKey || event.metaKey)) {
+                if (selectedNodeIds.has(id)) selectedNodeIds.delete(id);
+                else selectedNodeIds.add(id);
+                anchorNodeId = id;
+            } else {
+                selectedNodeIds.clear();
+                selectedNodeIds.add(id);
+                anchorNodeId = id; 
+            }
+
+            if (selectedNodeIds.size === 0) {
+                selectedNodeIds.add(structureData.id);
+                anchorNodeId = structureData.id;
+            }
+
+            lastSelectedId = id;
+            updateUI();
+            updateEditor();
+        }
+
+        // --- 6. УПРАВЛЕНИЕ УЗЛАМИ ---
+        function addChild(parentId) {
+            const result = findNodeAndParent(structureData, parentId);
+            if (result) {
+                if (!result.node.children) result.node.children = [];
+                const newNode = { id: generateId(), name: "Новый элемент", collapsed: false };
+                result.node.children.push(newNode);
+                if (result.node.value) delete result.node.value;
+                selectNode(newNode.id);
+            }
+        }
+
+        function deleteSelectedNodes() {
+            let deletedAny = false;
+            selectedNodeIds.forEach(id => {
+                if (id !== structureData.id) {
+                    const result = findNodeAndParent(structureData, id);
+                    if (result && result.parent) {
+                        result.parent.children.splice(result.index, 1);
+                        if (result.parent.children.length === 0) delete result.parent.children;
+                        deletedAny = true;
+                    }
+                }
+            });
+            if (deletedAny) {
+                selectedNodeIds.clear();
+                selectNode(structureData.id); 
+            }
+        }
+
+        function duplicateSelectedNodes() {
+            const fullList = [];
+            function traverseFull(node) {
+                fullList.push(node.id);
+                if (node.children) node.children.forEach(traverseFull);
+            }
+            traverseFull(structureData);
+            
+            const sortedIds = Array.from(selectedNodeIds).sort((a, b) => fullList.indexOf(b) - fullList.indexOf(a));
+            const newSelection = new Set();
+            let changed = false;
+
+            sortedIds.forEach(id => {
+                if (id === structureData.id) return; 
+                
+                const result = findNodeAndParent(structureData, id);
+                if (result && result.parent) {
+                    const clone = JSON.parse(JSON.stringify(result.node));
+                    
+                    function regenerateIds(n) {
+                        n.id = generateId();
+                        if (n.children) n.children.forEach(regenerateIds);
+                    }
+                    regenerateIds(clone);
+                    
+                    result.parent.children.splice(result.index + 1, 0, clone);
+                    newSelection.add(clone.id);
+                    changed = true;
+                }
+            });
+
+            if (changed) {
+                selectedNodeIds = newSelection;
+                anchorNodeId = Array.from(newSelection)[0];
+                lastSelectedId = anchorNodeId;
+                updateUI();
+                updateEditor();
+            }
+        }
+
+        // --- 7. КЛАВИАТУРНЫЕ СОКРАЩЕНИЯ И ЗАГОТОВКИ ---
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            const flatList = getFlattenedTree();
+            const currentIdx = flatList.indexOf(lastSelectedId);
+
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (currentIdx > 0) selectNode(flatList[currentIdx - 1], e);
+            } 
+            else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (currentIdx < flatList.length - 1) selectNode(flatList[currentIdx + 1], e);
+            } 
+            else if (e.key === 'Delete' || e.key === 'Backspace') {
+                e.preventDefault();
+                if (selectedNodeIds.size > 0) deleteSelectedNodes(); 
+            }
+            else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+                e.preventDefault(); 
+                if (selectedNodeIds.size > 0) duplicateSelectedNodes();
+            }
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const nameStr = btn.getAttribute('data-name');
+                const shortStr = btn.getAttribute('data-short');
+                
+                const nameInput = document.getElementById('prop-name');
+                const shortInput = document.getElementById('prop-short');
+                
+                nameInput.value = nameStr;
+                shortInput.value = shortStr;
+                
+                nameInput.dispatchEvent(new Event('input'));
+                shortInput.dispatchEvent(new Event('input'));
+            });
+        });
+
+        // --- 8. МАССОВОЕ РЕДАКТИРОВАНИЕ ---
+        const inputs = ['name', 'short', 'value', 'time', 'comment']; 
+        inputs.forEach(prop => {
+            document.getElementById(`prop-${prop}`).addEventListener('input', (e) => {
+                let val = e.target.value;
+                selectedNodeIds.forEach(id => {
+                    const result = findNodeAndParent(structureData, id);
+                    if (result) {
+                        if (prop === 'value' && result.node.children && result.node.children.length > 0) return;
+                        if (val === '') delete result.node[prop];
+                        else result.node[prop] = prop === 'value' ? parseFloat(val) : val;
+                    }
+                });
+                updateUI();
+            });
+        });
+
+        // --- 9. ЭКСПОРТ JSON ---
+        function cleanDataForExport(node) {
+            const cleanNode = { ...node };
+            delete cleanNode.id; 
+            delete cleanNode.collapsed; 
+            if (cleanNode.children && cleanNode.children.length > 0) {
+                cleanNode.children = cleanNode.children.map(cleanDataForExport);
+            }
+            return cleanNode;
+        }
+
+        function updateJsonOutput() {
+            const exportData = cleanDataForExport(structureData);
+            document.getElementById('json-output').textContent = JSON.stringify(exportData, null, 2);
+        }
+
+        document.getElementById('btn-copy').onclick = () => {
+            navigator.clipboard.writeText(document.getElementById('json-output').textContent);
+            alert("Код успешно скопирован в буфер обмена!");
+        };
+
+        document.getElementById('btn-download').onclick = () => {
+            const dataStr = document.getElementById('json-output').textContent;
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'form-structure.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        // Запуск
+        selectNode(structureData.id);
+
+        // --- 10. ГЛОБАЛЬНЫЕ ПОДСКАЗКИ (Без обрезки окнами) ---
+        const globalTooltip = document.createElement('div');
+        globalTooltip.id = 'global-tooltip';
+        document.body.appendChild(globalTooltip);
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                globalTooltip.innerHTML = btn.getAttribute('data-tooltip');
+                globalTooltip.style.opacity = '1';
+                
+                // Вычисляем координаты кнопки
+                const rect = btn.getBoundingClientRect();
+                let left = rect.left + (rect.width / 2) - (globalTooltip.offsetWidth / 2);
+                let top = rect.top - globalTooltip.offsetHeight - 8;
+                
+                // Защита от вылезания за края экрана
+                if (top < 10) top = rect.bottom + 8; // Если сверху мало места, показываем снизу
+                if (left < 10) left = 10;
+                
+                globalTooltip.style.left = left + 'px';
+                globalTooltip.style.top = top + 'px';
+            });
+            
+            btn.addEventListener('mouseleave', () => {
+                globalTooltip.style.opacity = '0';
+            });
+        });
+    </script>
+</body>
+</html>
