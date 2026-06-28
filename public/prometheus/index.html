@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Прометей. Партия Света — CHILINE</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <link rel="icon" type="image/png" href="/src/assets/favicon.png">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
+    
+    <style>
+        #contactForm { transition: opacity 0.3s ease; }
+        .hidden { display: none !important; }
+        .page-container { padding: 20px 20px 40px; max-width: 800px; margin: 0 auto; }
+        
+        .back-link {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;
+            color: #999; text-decoration: none; margin-bottom: 40px;
+            transition: color 0.2s ease;
+        }
+        .back-link:hover { color: #000; }
+        .back-link svg { width: 14px; height: 14px; }
+        
+        .article-title {
+            font-size: 1.4rem; font-weight: 300; letter-spacing: 0.2em;
+            text-transform: uppercase; margin-bottom: 30px; line-height: 1.4;
+        }
+        
+        .article-text {
+            font-size: 0.95rem; line-height: 1.6; color: #333; margin-bottom: 40px;
+        }
+        .article-text p { margin-bottom: 16px; }
+
+        .soundcloud-container {
+            margin-bottom: 50px; border: 1px solid #000;
+            background: #fff; line-height: 0; 
+            width: 100%;
+        }
+        .soundcloud-container iframe { width: 100%; height: 120px; border: none; }
+
+        .materials-section {
+            border-top: 1px solid #000; padding-top: 30px; margin-bottom: 25px;
+        }
+        .section-title {
+            font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase;
+            color: #666; margin-bottom: 20px;
+        }
+        .doc-link {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 18px 20px; border: 1px solid #000; color: #000;
+            text-decoration: none; text-transform: uppercase;
+            letter-spacing: 0.1em; font-size: 0.85rem; margin-bottom: 15px;
+            transition: all 0.2s ease;
+        }
+        .doc-link:hover { background: #000; color: #fff; }
+        .doc-link svg { width: 18px; height: 18px; flex-shrink: 0; margin-left: 10px; }
+
+        /* Базовая кнопка связи */
+        .cooperation-btn {
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            width: 100%; padding: 22px 20px; background: #000; color: #fff; border: 1px solid #000;
+            text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.85rem;
+            margin-top: 10px; margin-bottom: 30px; cursor: pointer; transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .cooperation-btn:hover { background: #fff; color: #000; }
+        .cooperation-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+        /* --- МОДАЛЬНОЕ ОКНО С ЗАТЕМНЕНИЕМ --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease; padding: 20px; box-sizing: border-box;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal-window {
+            background: #fff; border: 1px solid #000; width: 100%; max-width: 500px;
+            padding: 35px 30px; box-sizing: border-box; position: relative;
+            transform: translateY(15px); transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-window { transform: translateY(0); }
+
+        .modal-close {
+            position: absolute; top: 15px; right: 15px; background: none; border: none;
+            cursor: pointer; padding: 5px; color: #666; transition: color 0.2s ease;
+        }
+        .modal-close:hover { color: #000; }
+        .modal-close svg { width: 18px; height: 18px; display: block; }
+
+        .modal-title {
+            font-size: 0.9rem; letter-spacing: 0.15em; text-transform: uppercase;
+            color: #000; margin-bottom: 25px; font-weight: 400; border-bottom: 1px solid #eee;
+            padding-bottom: 12px;
+        }
+
+        .contact-form { display: flex; flex-direction: column; gap: 15px; }
+        .contact-input {
+            width: 100%; padding: 15px 20px; border: 1px solid #ccc; font-size: 0.9rem;
+            font-family: inherit; box-sizing: border-box; background: #fff; outline: none;
+            transition: border-color 0.2s ease;
+        }
+        .contact-input:focus { border-color: #000; }
+        textarea.contact-input { resize: vertical; min-height: 100px; }
+        
+        .contact-submit {
+            padding: 18px 20px; background: #000; color: #fff; border: 1px solid #000;
+            text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.8rem;
+            cursor: pointer; transition: all 0.2s ease; font-family: inherit;
+        }
+        .contact-submit:hover:not(:disabled) { background: #fff; color: #000; }
+        .contact-submit:disabled { background: #666; border-color: #666; cursor: not-allowed; }
+
+        .form-message {
+            margin-top: 15px; font-size: 0.85rem; padding: 15px; border: 1px solid #000;
+            display: none; text-align: center; text-transform: uppercase; letter-spacing: 0.1em;
+        }
+        .form-message.success { background: #000; color: #fff; }
+        .form-message.error { background: #fff; color: red; border-color: red; }
+
+        /* Галерея превью */
+        .score-preview-wrapper {
+            margin-bottom: 50px; position: relative; margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px;
+        }
+        .score-gallery {
+            display: flex; gap: 20px; overflow-x: auto; padding-bottom: 15px; 
+            cursor: grab; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+        }
+        .score-gallery:active { cursor: grabbing; }
+        .score-gallery::-webkit-scrollbar { height: 12px; }
+        .score-gallery::-webkit-scrollbar-track { background: #f5f5f5; border-radius: 6px; }
+        .score-gallery::-webkit-scrollbar-thumb { background: #ccc; border-radius: 6px; border: 2px solid #f5f5f5; }
+        .score-gallery::-webkit-scrollbar-thumb:hover { background: #000; }
+
+        .score-page {
+            flex: 0 0 80vw; max-width: 350px; height: auto; border: 1px solid #eaeaea; background: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none; display: block; flex-shrink: 0; 
+        }
+        @media (hover: hover) { .score-page:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); } }
+        .score-page canvas { width: 100%; height: auto; display: block; }
+
+        /* Адаптив для маленьких экранов */
+        @media (max-width: 600px) {
+            .article-title { font-size: 1.2rem; }
+            .doc-link { flex-direction: column; align-items: flex-start; gap: 10px; padding: 15px; font-size: 0.75rem; }
+            .doc-link svg { align-self: flex-end; }
+            .cooperation-btn { padding: 18px 15px; font-size: 0.75rem; flex-direction: column; text-align: center; gap: 8px; }
+            .cooperation-btn svg { align-self: center; }
+            .modal-window { padding: 25px 20px; }
+        }
+    </style>
+</head>
+<body>
+    
+    <header>
+        <h1 class="brand-title">Chiline</h1>
+    </header>
+
+    <main>
+        <div class="page-container">
+            <a href="/" class="back-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                На главную
+            </a>
+
+            <h2 class="article-title">Прометей.<br>Партия света</h2>
+            
+            <div class="article-text">
+                <p>Скрябин был первым в истории композитором, который зашифровал партию света прямо в нотах, намертво связав цвета с гармонией и внутренними смыслами музыки. Однако то, что происходит на концертах сегодня — почти всегда самодеятельность художников по свету, игнорирующая логику автора.</p>
+                <p>Опираясь на найденную рукопись 1911 года, где композитор от руки оставил подробнейшие инструкции к исполнению световой партии (вроде «темные молнии» или «катаклизм, все в огне»), мы провели полномасштабное исследование. Сотни тактов и больше тысячи словесных указаний были расшифрованы и синхронизированы с музыкой.</p>
+                <p>Итог — уникальная 16-страничная партитура. Это не просто исторический документ, а готовое рабочее решение, позволяющее воспроизвести задумки Скрябина со стопроцентной точностью.</p>
+            </div>
+
+            <div class="soundcloud-container">
+                 <iframe 
+                      width="100%" height="120" scrolling="no" frameborder="0" allow="autoplay" 
+                       src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/jorge-coli/alexander-scriabin-prometheus-the-poem-of-fire-roger-epple-sao-paulo-2000&color=%23000000&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false">
+                  </iframe>
+            </div>
+
+            <div class="score-preview-wrapper">
+                <div class="score-gallery" id="scoreSlider"></div>
+            </div>
+
+            <div class="materials-section">
+                <div class="section-title">Материалы проекта</div>
+                <a href="assets/chiline_edition/1.pdf" target="_blank" class="doc-link">
+                    <span>Фрагмент партии света с комментариями (PDF)</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                </a>
+                <a href="assets/scriabin_1911.pdf" target="_blank" class="doc-link">
+                    <span>Оригинальная рукопись Скрябина 1911 года (PDF)</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                </a>
+            </div>
+
+            <button id="openModalBtn" class="cooperation-btn">
+                <span>Сотрудничество и полная версия нот</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            </button>
+            
+        </div>
+    </main>
+
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-window">
+            <button id="closeModalBtn" class="modal-close" title="Закрыть">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <div class="modal-title">Связаться с нами</div>
+            
+            <form id="contactForm" action="https://formspree.io/f/mlgynvrb" method="POST" class="contact-form">
+                <input type="text" name="name" class="contact-input" placeholder="Ваше имя" required>
+                <input type="email" name="email" class="contact-input" placeholder="Ваш Email" required>
+                <textarea name="message" class="contact-input" placeholder="Напишите сообщение..." required></textarea>
+                <button type="submit" class="contact-submit">Отправить сообщение</button>
+            </form>
+            
+            <div id="formMessage" class="form-message"></div>
+        </div>
+    </div>
+
+    <footer>
+        <span class="footer-mark">MDXXVI</span>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 1. ЛОГИКА МОДАЛЬНОГО ОКНА ---
+            const openModalBtn = document.getElementById('openModalBtn');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const modalOverlay = document.getElementById('modalOverlay');
+
+            function openModal() { modalOverlay.classList.add('active'); document.body.style.overflow = 'hidden'; }
+            function closeModal() { 
+    modalOverlay.classList.remove('active'); 
+    document.body.style.overflow = ''; 
+    
+    // Сбрасываем форму при ручном закрытии окна
+    setTimeout(() => {
+        if (contactForm) {
+            contactForm.classList.remove('hidden');
+            contactForm.reset();
+        }
+        if (formMessage) {
+            formMessage.style.display = 'none';
+        }
+    }, 300); // Небольшая задержка, чтобы форма не "моргала" в процессе анимации исчезновения окна
+}
+
+            if(openModalBtn) openModalBtn.addEventListener('click', openModal);
+            if(closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+            // Закрытие при клике по затемненному фону вокруг окна
+            if(modalOverlay) {
+                modalOverlay.addEventListener('click', (e) => {
+                    if(e.target === modalOverlay) closeModal();
+                });
+            }
+
+            // --- ЛОГИКА ОТПРАВКИ ФОРМЫ ---
+            const contactForm = document.getElementById('contactForm');
+            const formMessage = document.getElementById('formMessage');
+
+            if(contactForm) {
+                contactForm.addEventListener('submit', async (e) => {
+                    e.preventDefault(); 
+                    
+                    const submitBtn = contactForm.querySelector('.contact-submit');
+                    submitBtn.textContent = 'Отправка...';
+                    submitBtn.disabled = true;
+
+                    const data = new FormData(contactForm);
+                    
+                    try {
+                        const response = await fetch(contactForm.action, {
+                            method: contactForm.method,
+                            body: data,
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        
+                        if (response.ok) {
+                            // СКРЫВАЕМ САМУ ФОРМУ
+                            contactForm.classList.add('hidden');
+                            
+                            // ПОКАЗЫВАЕМ СООБЩЕНИЕ ОБ УСПЕХЕ
+                            formMessage.textContent = 'Сообщение успешно отправлено';
+                            formMessage.className = 'form-message success';
+                            formMessage.style.display = 'block';
+                        } else {
+                            formMessage.textContent = 'Ошибка отправки.';
+                            formMessage.className = 'form-message error';
+                            formMessage.style.display = 'block';
+                        }
+                    } catch (error) {
+                        formMessage.textContent = 'Ошибка сети.';
+                        formMessage.className = 'form-message error';
+                        formMessage.style.display = 'block';
+                    } finally {
+                        submitBtn.textContent = 'Отправить сообщение';
+                        submitBtn.disabled = false;
+                    }
+                });
+            }
+
+            // --- 3. РЕНДЕР PDF И ГОРИЗОНТАЛЬНАЯ ГАЛЕРЕЯ ПРЕВЬЮ ---
+            const gallery = document.getElementById('scoreSlider');
+            const pdfUrl = 'assets/chiline_edition/1.pdf'; 
+
+            async function renderSinglePdf() {
+                try {
+                    const loadingTask = pdfjsLib.getDocument(pdfUrl);
+                    const pdf = await loadingTask.promise;
+                    const totalPages = pdf.numPages;
+
+                    for (let i = 1; i <= totalPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const viewport = page.getViewport({ scale: 2.0 }); 
+                        
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        
+                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                        
+                        const imgDataUrl = canvas.toDataURL('image/png');
+                        
+                        const link = document.createElement('a');
+                        link.href = imgDataUrl; 
+                        link.dataset.fancybox = "gallery";
+                        link.className = "score-page";
+                        
+                        const previewCanvas = document.createElement('canvas');
+                        previewCanvas.width = canvas.width;
+                        previewCanvas.height = canvas.height;
+                        const previewContext = previewCanvas.getContext('2d');
+                        previewContext.drawImage(canvas, 0, 0);
+                        
+                        link.appendChild(previewCanvas);
+                        gallery.appendChild(link);
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки PDF:', error);
+                }
+            }
+            
+            renderSinglePdf();
+
+            Fancybox.bind("[data-fancybox]", {
+                wheel: "zoom", 
+                images: { protected: true },
+                Toolbar: {
+                    display: { left: [], middle: ["zoomIn", "zoomOut", "toggle1to1"], right: ["close"] }
+                }
+            });
+
+            const slider = document.getElementById('scoreSlider');
+            slider.addEventListener('wheel', (e) => {
+                if (e.pointerType !== 'touch' && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                    e.preventDefault(); 
+                    slider.scrollLeft += (e.deltaY > 0 ? 300 : -300);
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                const rect = slider.getBoundingClientRect();
+                const isVisible = (rect.top >= 0 && rect.bottom <= window.innerHeight);
+                if (isVisible) {
+                    if (e.key === 'ArrowRight') { e.preventDefault(); slider.scrollLeft += 350; } 
+                    else if (e.key === 'ArrowLeft') { e.preventDefault(); slider.scrollLeft -= 350; }
+                }
+            });
+        });
+    </script>
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
