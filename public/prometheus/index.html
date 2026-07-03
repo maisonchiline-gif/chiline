@@ -4,15 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Прометей. Партия Света — CHILINE</title>
-    <link rel="stylesheet" href="/src/style.css" />
-    <link rel="icon" type="image/png" href="/src/assets/favicon.png">
     
+    <!-- Стили Fancybox для модального увеличения нот -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
     
     <style>
-        #contactForm { transition: opacity 0.3s ease; }
-        .hidden { display: none !important; }
-        .page-container { padding: 20px 20px 40px; max-width: 800px; margin: 0 auto; }
+        /* Базовые стили */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fff;
+            color: #000;
+        }
+
+        header {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .brand-title {
+            font-size: 1.2rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 400;
+            margin: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            color: #999;
+        }
+
+        /* КОНТЕЙНЕР: Сделан шире (1000px вместо 800px) */
+        .page-container { padding: 20px 20px 40px; max-width: 1000px; margin: 0 auto; }
         
         .back-link {
             display: inline-flex; align-items: center; gap: 8px;
@@ -31,25 +59,35 @@
         .article-text {
             font-size: 0.95rem; line-height: 1.6; color: #333; margin-bottom: 40px;
         }
-        .article-text p { margin-bottom: 16px; }
+        .article-text p { margin-bottom: 16px; text-align: justify; }
 
+        /* Плеер SoundCloud (без черной рамки, со скруглением) */
         .soundcloud-container {
-            margin-bottom: 50px; border: 1px solid #000;
-            background: #fff; line-height: 0; 
+            margin-bottom: 50px; 
+            background: #fff; 
+            line-height: 0; 
             width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); /* Легкая тень вместо рамки */
         }
         .soundcloud-container iframe { width: 100%; height: 120px; border: none; }
 
         .materials-section {
-            border-top: 1px solid #000; padding-top: 30px; margin-bottom: 25px;
+            border-top: 1px solid #eaeaea; padding-top: 30px; margin-bottom: 25px;
         }
         .section-title {
             font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase;
             color: #666; margin-bottom: 20px;
         }
+
+        /* Ссылки на документы (без рамок, со светло-серым фоном) */
         .doc-link {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 18px 20px; border: 1px solid #000; color: #000;
+            padding: 18px 20px; 
+            background: #f7f7f7; /* Мягкий фон */
+            border-radius: 8px;
+            color: #000;
             text-decoration: none; text-transform: uppercase;
             letter-spacing: 0.1em; font-size: 0.85rem; margin-bottom: 15px;
             transition: all 0.2s ease;
@@ -57,18 +95,22 @@
         .doc-link:hover { background: #000; color: #fff; }
         .doc-link svg { width: 18px; height: 18px; flex-shrink: 0; margin-left: 10px; }
 
-        /* Базовая кнопка связи */
+        /* Кнопка сотрудничества (без рамки) */
         .cooperation-btn {
             display: flex; align-items: center; justify-content: center; gap: 12px;
-            width: 100%; padding: 22px 20px; background: #000; color: #fff; border: 1px solid #000;
+            width: 100%; padding: 22px 20px; 
+            background: #000; color: #fff; border: none; border-radius: 8px;
             text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.85rem;
             margin-top: 10px; margin-bottom: 30px; cursor: pointer; transition: all 0.2s ease;
             font-family: inherit;
         }
-        .cooperation-btn:hover { background: #fff; color: #000; }
+        .cooperation-btn:hover { background: #333; color: #fff; }
         .cooperation-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
 
-        /* --- МОДАЛЬНОЕ ОКНО С ЗАТЕМНЕНИЕМ --- */
+        /* --- МОДАЛЬНОЕ ОКНО --- */
+        #contactForm { transition: opacity 0.3s ease; }
+        .hidden { display: none !important; }
+        
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px);
@@ -78,8 +120,11 @@
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
 
+        /* Убрана черная рамка, добавлена тень и скругление */
         .modal-window {
-            background: #fff; border: 1px solid #000; width: 100%; max-width: 500px;
+            background: #fff; border: none; border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            width: 100%; max-width: 500px;
             padding: 35px 30px; box-sizing: border-box; position: relative;
             transform: translateY(15px); transition: transform 0.3s ease;
         }
@@ -100,29 +145,29 @@
 
         .contact-form { display: flex; flex-direction: column; gap: 15px; }
         .contact-input {
-            width: 100%; padding: 15px 20px; border: 1px solid #ccc; font-size: 0.9rem;
-            font-family: inherit; box-sizing: border-box; background: #fff; outline: none;
-            transition: border-color 0.2s ease;
+            width: 100%; padding: 15px 20px; border: 1px solid #eee; border-radius: 6px;
+            font-size: 0.9rem; font-family: inherit; box-sizing: border-box; 
+            background: #fcfcfc; outline: none; transition: border-color 0.2s ease;
         }
-        .contact-input:focus { border-color: #000; }
+        .contact-input:focus { border-color: #999; background: #fff; }
         textarea.contact-input { resize: vertical; min-height: 100px; }
         
         .contact-submit {
-            padding: 18px 20px; background: #000; color: #fff; border: 1px solid #000;
+            padding: 18px 20px; background: #000; color: #fff; border: none; border-radius: 6px;
             text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.8rem;
             cursor: pointer; transition: all 0.2s ease; font-family: inherit;
         }
-        .contact-submit:hover:not(:disabled) { background: #fff; color: #000; }
-        .contact-submit:disabled { background: #666; border-color: #666; cursor: not-allowed; }
+        .contact-submit:hover:not(:disabled) { background: #333; color: #fff; }
+        .contact-submit:disabled { background: #666; cursor: not-allowed; }
 
         .form-message {
-            margin-top: 15px; font-size: 0.85rem; padding: 15px; border: 1px solid #000;
+            margin-top: 15px; font-size: 0.85rem; padding: 15px; border-radius: 6px;
             display: none; text-align: center; text-transform: uppercase; letter-spacing: 0.1em;
         }
         .form-message.success { background: #000; color: #fff; }
-        .form-message.error { background: #fff; color: red; border-color: red; }
+        .form-message.error { background: #ffebee; color: red; }
 
-        /* Галерея превью */
+        /* Галерея превью (Без жестких рамок вокруг страниц) */
         .score-preview-wrapper {
             margin-bottom: 50px; position: relative; margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px;
         }
@@ -137,18 +182,23 @@
         .score-gallery::-webkit-scrollbar-thumb:hover { background: #000; }
 
         .score-page {
-            flex: 0 0 80vw; max-width: 350px; height: auto; border: 1px solid #eaeaea; background: #fff;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.2s ease, box-shadow 0.2s ease;
-            text-decoration: none; display: block; flex-shrink: 0; 
+            flex: 0 0 80vw; max-width: 350px; height: auto; background: #fff;
+            border-radius: 4px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.06); 
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none; display: block; flex-shrink: 0; overflow: hidden;
         }
-        @media (hover: hover) { .score-page:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); } }
+        @media (hover: hover) { .score-page:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); } }
         .score-page canvas { width: 100%; height: auto; display: block; }
 
         /* Адаптив для маленьких экранов */
         @media (max-width: 600px) {
             .article-title { font-size: 1.2rem; }
-            .doc-link { flex-direction: column; align-items: flex-start; gap: 10px; padding: 15px; font-size: 0.75rem; }
-            .doc-link svg { align-self: flex-end; }
+            .doc-link { 
+                display: flex; flex-direction: row; align-items: center; 
+                padding: 15px; font-size: 0.75rem; gap: 10px;
+            }
+            .doc-link span { text-align: left; }
+            .doc-link svg { margin-left: auto; } /* Иконка всегда справа */
             .cooperation-btn { padding: 18px 15px; font-size: 0.75rem; flex-direction: column; text-align: center; gap: 8px; }
             .cooperation-btn svg { align-self: center; }
             .modal-window { padding: 25px 20px; }
@@ -179,21 +229,22 @@
             <div class="soundcloud-container">
                  <iframe 
                       width="100%" height="120" scrolling="no" frameborder="0" allow="autoplay" 
-                       src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/jorge-coli/alexander-scriabin-prometheus-the-poem-of-fire-roger-epple-sao-paulo-2000&color=%23000000&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false">
+                      src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/jorge-coli/alexander-scriabin-prometheus-the-poem-of-fire-roger-epple-sao-paulo-2000&color=%23000000&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false">
                   </iframe>
             </div>
 
+            <!-- Галерея PDF Скрябина -->
             <div class="score-preview-wrapper">
                 <div class="score-gallery" id="scoreSlider"></div>
             </div>
 
             <div class="materials-section">
                 <div class="section-title">Материалы проекта</div>
-                <a href="assets/chiline_edition/1.pdf" target="_blank" class="doc-link">
+                <a href="assets/Scriabin_—_Prometheus_Luce_Part(fragment_CHILINE).pdf" target="_blank" class="doc-link">
                     <span>Фрагмент партии света с комментариями (PDF)</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
                 </a>
-                <a href="assets/scriabin_1911.pdf" target="_blank" class="doc-link">
+                <a href="assets/Scriabin_1911.pdf" target="_blank" class="doc-link">
                     <span>Оригинальная рукопись Скрябина 1911 года (PDF)</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
                 </a>
@@ -207,6 +258,7 @@
         </div>
     </main>
 
+    <!-- Модальное окно -->
     <div id="modalOverlay" class="modal-overlay">
         <div class="modal-window">
             <button id="closeModalBtn" class="modal-close" title="Закрыть">
@@ -244,31 +296,29 @@
 
             function openModal() { modalOverlay.classList.add('active'); document.body.style.overflow = 'hidden'; }
             function closeModal() { 
-    modalOverlay.classList.remove('active'); 
-    document.body.style.overflow = ''; 
-    
-    // Сбрасываем форму при ручном закрытии окна
-    setTimeout(() => {
-        if (contactForm) {
-            contactForm.classList.remove('hidden');
-            contactForm.reset();
-        }
-        if (formMessage) {
-            formMessage.style.display = 'none';
-        }
-    }, 300); // Небольшая задержка, чтобы форма не "моргала" в процессе анимации исчезновения окна
-}
+                modalOverlay.classList.remove('active'); 
+                document.body.style.overflow = ''; 
+                
+                setTimeout(() => {
+                    if (contactForm) {
+                        contactForm.classList.remove('hidden');
+                        contactForm.reset();
+                    }
+                    if (formMessage) {
+                        formMessage.style.display = 'none';
+                    }
+                }, 300);
+            }
 
             if(openModalBtn) openModalBtn.addEventListener('click', openModal);
             if(closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
-            // Закрытие при клике по затемненному фону вокруг окна
             if(modalOverlay) {
                 modalOverlay.addEventListener('click', (e) => {
                     if(e.target === modalOverlay) closeModal();
                 });
             }
 
-            // --- ЛОГИКА ОТПРАВКИ ФОРМЫ ---
+            // --- 2. ЛОГИКА ОТПРАВКИ ФОРМЫ ---
             const contactForm = document.getElementById('contactForm');
             const formMessage = document.getElementById('formMessage');
 
@@ -290,10 +340,7 @@
                         });
                         
                         if (response.ok) {
-                            // СКРЫВАЕМ САМУ ФОРМУ
                             contactForm.classList.add('hidden');
-                            
-                            // ПОКАЗЫВАЕМ СООБЩЕНИЕ ОБ УСПЕХЕ
                             formMessage.textContent = 'Сообщение успешно отправлено';
                             formMessage.className = 'form-message success';
                             formMessage.style.display = 'block';
@@ -383,6 +430,5 @@
             });
         });
     </script>
-    <script type="module" src="/src/main.js"></script>
 </body>
 </html>
