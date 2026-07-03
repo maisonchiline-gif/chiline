@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Фуга «Винни-Пух» — CHILINE</title>
+    
+    <!-- Подключаем стили для Fancybox (увеличение нот по клику) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
+
+    <style>
+        /* Базовые стили */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fff;
+            color: #000;
+        }
+
+        header {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .brand-title {
+            font-size: 1.2rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 400;
+            margin: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            color: #999;
+        }
+
+        .page-container { padding: 20px 20px 40px; max-width: 800px; margin: 0 auto; }
+        
+        .back-link {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;
+            color: #999; text-decoration: none; margin-bottom: 40px;
+            transition: color 0.2s ease;
+        }
+        .back-link:hover { color: #000; }
+        .back-link svg { width: 14px; height: 14px; }
+        
+        .article-title {
+            font-size: 1.4rem; font-weight: 300; letter-spacing: 0.2em;
+            text-transform: uppercase; margin-bottom: 30px; line-height: 1.4;
+        }
+        
+        .article-text {
+            font-size: 0.95rem; line-height: 1.6; color: #333; margin-bottom: 40px;
+        }
+        .article-text p { margin-bottom: 16px; text-align: justify; }
+
+        /* Блок видео YouTube */
+        .video-section {
+            margin-bottom: 50px; 
+            border: 1px solid #000;
+            background: #000; 
+            width: 100%;
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+        
+        .video-section iframe { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+        }
+
+        /* Галерея превью нот */
+        .score-preview-wrapper {
+            margin-bottom: 50px; position: relative; margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px;
+        }
+        .score-gallery {
+            display: flex; gap: 20px; overflow-x: auto; padding-bottom: 15px; 
+            cursor: grab; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+        }
+        .score-gallery:active { cursor: grabbing; }
+        .score-gallery::-webkit-scrollbar { height: 12px; }
+        .score-gallery::-webkit-scrollbar-track { background: #f5f5f5; border-radius: 6px; }
+        .score-gallery::-webkit-scrollbar-thumb { background: #ccc; border-radius: 6px; border: 2px solid #f5f5f5; }
+        .score-gallery::-webkit-scrollbar-thumb:hover { background: #000; }
+
+        .score-page {
+            flex: 0 0 80vw; max-width: 350px; height: auto; border: 1px solid #eaeaea; background: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none; display: block; flex-shrink: 0; 
+        }
+/* Адаптив для маленьких экранов */
+@media (max-width: 600px) {
+    .article-title { font-size: 1.2rem; }
+    .doc-link { 
+        padding: 15px; 
+        font-size: 0.75rem; 
+        gap: 10px;
+    }
+    .doc-link svg {
+        margin-left: auto; /* Гарантирует, что иконка прижмется к правому краю */
+    }
+}        .score-page canvas { width: 100%; height: auto; display: block; }
+
+        /* Блок материалов */
+        .materials-section {
+            border-top: 1px solid #000; padding-top: 30px; margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase;
+            color: #666; margin-bottom: 20px;
+        }
+        
+        .doc-link {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; /* ЭТА СТРОКА ВЫРАВНИВАЕТ ВСЁ ПО ЦЕНТРУ ВЕРТИКАЛИ */
+    padding: 18px 20px; 
+    border: 1px solid #000; 
+    color: #000;
+    text-decoration: none; 
+    text-transform: uppercase;
+    letter-spacing: 0.1em; 
+    font-size: 0.85rem; 
+    margin-bottom: 15px;
+    transition: all 0.2s ease;
+}
+        
+        .doc-link:hover { background: #000; color: #fff; }
+        .doc-link svg { width: 18px; height: 18px; flex-shrink: 0; margin-left: 10px; }
+
+        /* Адаптив для маленьких экранов */
+        @media (max-width: 600px) {
+    .doc-link { 
+        display: flex; 
+        flex-direction: row; /* Принудительно держим в одну строку */
+        align-items: center; 
+        padding: 15px; 
+        font-size: 0.75rem; 
+    }
+}
+    </style>
+</head>
+<body>
+    
+    <header>
+        <h1 class="brand-title">Chiline</h1>
+    </header>
+
+    <main>
+        <div class="page-container">
+            <a href="/" class="back-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                На главную
+            </a>
+
+            <h2 class="article-title">Фуга на тему Вайнберга 
+<br>из м/ф «Винни-Пух»</h2>
+            
+            <div class="article-text">
+                <p>Я с детства любил "Винни-Пуха", и когда наткнулся на полноценную фугу на тему из этого мультика, я тут же решил, что это какая-то неизвестная полная версия, которую написал сам Вайнберг (близкий друг Шостаковича и автор саундтрека к этому мультику). Музыка мне так сильно понравилась, что я сразу же захотел её поиграть.</p>
+                <p>Но тут же возникла проблема — нот в природе просто не существовало. Мне очень не хотелось терять такую красоту, поэтому я решил пойти на следующий шаг: полностью снять 4-голосную фугу на слух! И это несмотря на то, что я никогда особо хорошо не писал диктанты…</p>
+                <p>Уже в процессе этой работы я провел небольшой ресерч, и вот тут вскрылся главный сюрприз. Хоть фуга и была написана невероятно профессионально, оказалось, что это вообще не Вайнберг! Стилизацию создал композитор под ником Pripyat и выложил её на старом музыкальном форуме еще в 2016 году. К сожалению, поиск на том сайте давно сломан, ветку с нотами не найти, а сам автор не появлялся в сети с 2019 года. Было дико обидно, что такое крутое произведение может просто сгинуть на задворках интернета, поэтому я во что бы то ни стало решил довести дело до конца.</p>
+                <p>После нескольких недель работы с @chiline_madame, у нас получилось целых 7 страниц нотного текста!) И теперь каждый желающий может взять эти ноты и спокойно играть по ним в своё удовольствие.</p>
+            </div>
+
+            <!-- Галерея предпросмотра нот -->
+            <div class="score-preview-wrapper">
+                <div class="score-gallery" id="scoreSlider"></div>
+            </div>
+            <!-- Плеер YouTube -->
+            <div class="video-section">
+                <iframe src="https://www.youtube.com/embed/8Hi1zEG6IAE?controls=1&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+
+            <!-- Блок скачивания -->
+            <div class="materials-section">
+                <div class="section-title">Материалы проекта</div>
+                <a href="assets/Weinberg_-_Winnie_the_Pooh_Fugue_(arr_Pripyat,_trans_CHILINE).pdf" target="_blank" download class="doc-link">
+                    <span>Скачать ноты целиком (PDF)</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </a>
+            </div>
+            
+        </div>
+    </main>
+
+    <footer>
+        <span class="footer-mark">MDXXVI</span>
+    </footer>
+
+    <!-- Библиотеки для галереи -->
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <!-- Скрипт рендера PDF и управления галереей -->
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const gallery = document.getElementById('scoreSlider');
+            // Путь к файлу для предпросмотра
+            const pdfUrl = 'assets/Weinberg_-_Winnie_the_Pooh_Fugue_(arr_Pripyat,_trans_CHILINE).pdf'; 
+
+            async function renderSinglePdf() {
+                try {
+                    const loadingTask = pdfjsLib.getDocument(pdfUrl);
+                    const pdf = await loadingTask.promise;
+                    const totalPages = pdf.numPages;
+
+                    for (let i = 1; i <= totalPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const viewport = page.getViewport({ scale: 2.0 }); 
+                        
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        
+                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                        
+                        const imgDataUrl = canvas.toDataURL('image/png');
+                        
+                        const link = document.createElement('a');
+                        link.href = imgDataUrl; 
+                        link.dataset.fancybox = "gallery";
+                        link.className = "score-page";
+                        
+                        const previewCanvas = document.createElement('canvas');
+                        previewCanvas.width = canvas.width;
+                        previewCanvas.height = canvas.height;
+                        const previewContext = previewCanvas.getContext('2d');
+                        previewContext.drawImage(canvas, 0, 0);
+                        
+                        link.appendChild(previewCanvas);
+                        gallery.appendChild(link);
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки PDF:', error);
+                }
+            }
+            
+            renderSinglePdf();
+
+            // Инициализация Fancybox (модального окна с картинкой)
+            Fancybox.bind("[data-fancybox]", {
+                wheel: "zoom", 
+                images: { protected: true },
+                Toolbar: {
+                    display: { left: [], middle: ["zoomIn", "zoomOut", "toggle1to1"], right: ["close"] }
+                }
+            });
+
+            // Прокрутка колесом мыши для слайдера
+            const slider = document.getElementById('scoreSlider');
+            slider.addEventListener('wheel', (e) => {
+                if (e.pointerType !== 'touch' && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                    e.preventDefault(); 
+                    slider.scrollLeft += (e.deltaY > 0 ? 300 : -300);
+                }
+            });
+
+            // Навигация стрелками клавиатуры
+            document.addEventListener('keydown', (e) => {
+                const rect = slider.getBoundingClientRect();
+                const isVisible = (rect.top >= 0 && rect.bottom <= window.innerHeight);
+                if (isVisible) {
+                    if (e.key === 'ArrowRight') { e.preventDefault(); slider.scrollLeft += 350; } 
+                    else if (e.key === 'ArrowLeft') { e.preventDefault(); slider.scrollLeft -= 350; }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
