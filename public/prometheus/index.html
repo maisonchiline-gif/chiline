@@ -4,14 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Прометей. Партия Света — CHILINE</title>
-    <link rel="stylesheet" href="/src/style.css" />
     <link rel="icon" type="image/png" href="/src/assets/favicon.png">
     
+    <!-- Подключаем стили для Fancybox (увеличение нот по клику) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
-    
+
     <style>
-        #contactForm { transition: opacity 0.3s ease; }
-        .hidden { display: none !important; }
+        /* Базовые стили из Винни-Пуха */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fff;
+            color: #000;
+        }
+
+        header {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .brand-title {
+            font-size: 1.2rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 400;
+            margin: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            color: #999;
+        }
+
         .page-container { padding: 20px 20px 40px; max-width: 800px; margin: 0 auto; }
         
         .back-link {
@@ -31,44 +59,80 @@
         .article-text {
             font-size: 0.95rem; line-height: 1.6; color: #333; margin-bottom: 40px;
         }
-        .article-text p { margin-bottom: 16px; }
+        .article-text p { margin-bottom: 16px; text-align: justify; }
 
+        /* Блок SoundCloud без черных линий */
         .soundcloud-container {
-            margin-bottom: 50px; border: 1px solid #000;
+            margin-bottom: 50px; 
             background: #fff; line-height: 0; 
             width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            border: none;
         }
         .soundcloud-container iframe { width: 100%; height: 120px; border: none; }
 
-        .materials-section {
-            border-top: 1px solid #000; padding-top: 30px; margin-bottom: 25px;
+        /* Галерея превью нот */
+        .score-preview-wrapper {
+            margin-bottom: 50px; position: relative; margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px;
         }
+        .score-gallery {
+            display: flex; gap: 20px; overflow-x: auto; padding-bottom: 15px; 
+            cursor: grab; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+        }
+        .score-gallery:active { cursor: grabbing; }
+        .score-gallery::-webkit-scrollbar { height: 12px; }
+        .score-gallery::-webkit-scrollbar-track { background: #f5f5f5; border-radius: 6px; }
+        .score-gallery::-webkit-scrollbar-thumb { background: #ccc; border-radius: 6px; border: 2px solid #f5f5f5; }
+        .score-gallery::-webkit-scrollbar-thumb:hover { background: #000; }
+
+        .score-page {
+            flex: 0 0 80vw; max-width: 350px; height: auto; border: 1px solid #eaeaea; background: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none; display: block; flex-shrink: 0; 
+        }
+        @media (hover: hover) { .score-page:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); } }
+        .score-page canvas { width: 100%; height: auto; display: block; }
+
+        /* Блок материалов (убрана верхняя черная линия) */
+        .materials-section {
+            padding-top: 30px; margin-bottom: 25px; border: none;
+        }
+        
         .section-title {
             font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase;
             color: #666; margin-bottom: 20px;
         }
-        .doc-link {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 18px 20px; border: 1px solid #000; color: #000;
-            text-decoration: none; text-transform: uppercase;
-            letter-spacing: 0.1em; font-size: 0.85rem; margin-bottom: 15px;
+        
+        /* Стили ссылок и кнопок без черных линий */
+        .doc-link, .cooperation-btn {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 18px 20px; 
+            background: #f5f5f5; /* Мягкий фон вместо черной рамки */
+            color: #000;
+            text-decoration: none; 
+            text-transform: uppercase;
+            letter-spacing: 0.1em; 
+            font-size: 0.85rem; 
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
             transition: all 0.2s ease;
-        }
-        .doc-link:hover { background: #000; color: #fff; }
-        .doc-link svg { width: 18px; height: 18px; flex-shrink: 0; margin-left: 10px; }
-
-        /* Базовая кнопка связи */
-        .cooperation-btn {
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-            width: 100%; padding: 22px 20px; background: #000; color: #fff; border: 1px solid #000;
-            text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.85rem;
-            margin-top: 10px; margin-bottom: 30px; cursor: pointer; transition: all 0.2s ease;
             font-family: inherit;
+            width: 100%;
+            box-sizing: border-box;
         }
-        .cooperation-btn:hover { background: #fff; color: #000; }
-        .cooperation-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+        
+        .doc-link:hover, .cooperation-btn:hover { background: #e0e0e0; color: #000; }
+        .doc-link svg, .cooperation-btn svg { width: 18px; height: 18px; flex-shrink: 0; margin-left: 10px; }
 
-        /* --- МОДАЛЬНОЕ ОКНО С ЗАТЕМНЕНИЕМ --- */
+        /* --- МОДАЛЬНОЕ ОКНО --- */
+        #contactForm { transition: opacity 0.3s ease; }
+        .hidden { display: none !important; }
+
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px);
@@ -79,7 +143,8 @@
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
 
         .modal-window {
-            background: #fff; border: 1px solid #000; width: 100%; max-width: 500px;
+            background: #fff; border: none; width: 100%; max-width: 500px;
+            border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             padding: 35px 30px; box-sizing: border-box; position: relative;
             transform: translateY(15px); transition: transform 0.3s ease;
         }
@@ -102,55 +167,39 @@
         .contact-input {
             width: 100%; padding: 15px 20px; border: 1px solid #ccc; font-size: 0.9rem;
             font-family: inherit; box-sizing: border-box; background: #fff; outline: none;
-            transition: border-color 0.2s ease;
+            border-radius: 8px; transition: border-color 0.2s ease;
         }
         .contact-input:focus { border-color: #000; }
         textarea.contact-input { resize: vertical; min-height: 100px; }
         
         .contact-submit {
-            padding: 18px 20px; background: #000; color: #fff; border: 1px solid #000;
+            padding: 18px 20px; background: #000; color: #fff; border: none; border-radius: 8px;
             text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.8rem;
             cursor: pointer; transition: all 0.2s ease; font-family: inherit;
         }
-        .contact-submit:hover:not(:disabled) { background: #fff; color: #000; }
-        .contact-submit:disabled { background: #666; border-color: #666; cursor: not-allowed; }
+        .contact-submit:hover:not(:disabled) { background: #333; }
+        .contact-submit:disabled { background: #666; cursor: not-allowed; }
 
         .form-message {
-            margin-top: 15px; font-size: 0.85rem; padding: 15px; border: 1px solid #000;
+            margin-top: 15px; font-size: 0.85rem; padding: 15px; border-radius: 8px;
             display: none; text-align: center; text-transform: uppercase; letter-spacing: 0.1em;
         }
         .form-message.success { background: #000; color: #fff; }
-        .form-message.error { background: #fff; color: red; border-color: red; }
-
-        /* Галерея превью */
-        .score-preview-wrapper {
-            margin-bottom: 50px; position: relative; margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px;
-        }
-        .score-gallery {
-            display: flex; gap: 20px; overflow-x: auto; padding-bottom: 15px; 
-            cursor: grab; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
-        }
-        .score-gallery:active { cursor: grabbing; }
-        .score-gallery::-webkit-scrollbar { height: 12px; }
-        .score-gallery::-webkit-scrollbar-track { background: #f5f5f5; border-radius: 6px; }
-        .score-gallery::-webkit-scrollbar-thumb { background: #ccc; border-radius: 6px; border: 2px solid #f5f5f5; }
-        .score-gallery::-webkit-scrollbar-thumb:hover { background: #000; }
-
-        .score-page {
-            flex: 0 0 80vw; max-width: 350px; height: auto; border: 1px solid #eaeaea; background: #fff;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.2s ease, box-shadow 0.2s ease;
-            text-decoration: none; display: block; flex-shrink: 0; 
-        }
-        @media (hover: hover) { .score-page:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); } }
-        .score-page canvas { width: 100%; height: auto; display: block; }
+        .form-message.error { background: #fff; color: red; border: 1px solid red; }
 
         /* Адаптив для маленьких экранов */
         @media (max-width: 600px) {
             .article-title { font-size: 1.2rem; }
-            .doc-link { flex-direction: column; align-items: flex-start; gap: 10px; padding: 15px; font-size: 0.75rem; }
-            .doc-link svg { align-self: flex-end; }
-            .cooperation-btn { padding: 18px 15px; font-size: 0.75rem; flex-direction: column; text-align: center; gap: 8px; }
-            .cooperation-btn svg { align-self: center; }
+            .doc-link, .cooperation-btn { 
+                display: flex; 
+                flex-direction: row; 
+                align-items: center; 
+                padding: 15px; 
+                font-size: 0.75rem; 
+            }
+            .doc-link svg, .cooperation-btn svg {
+                margin-left: auto;
+            }
             .modal-window { padding: 25px 20px; }
         }
     </style>
@@ -189,20 +238,29 @@
 
             <div class="materials-section">
                 <div class="section-title">Материалы проекта</div>
-                <a href="assets/Scriabin_—_Prometheus_Luce_Part(fragment_CHILINE).pdf" target="_blank" class="doc-link">
+                <a href="assets/Scriabin_—_Prometheus_Luce_Part(fragment_CHILINE).pdf" target="_blank" download class="doc-link">
                     <span>Фрагмент партии света с комментариями (PDF)</span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
                 </a>
-                <a href="assets/Scriabin_1911.pdf" target="_blank" class="doc-link">
+                <a href="assets/Scriabin_1911.pdf" target="_blank" download class="doc-link">
                     <span>Оригинальная рукопись Скрябина 1911 года (PDF)</span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
                 </a>
+                
+                <!-- Кнопка модального окна оставлена, но стилизована так же как ссылки для единообразия -->
+                <button id="openModalBtn" class="cooperation-btn">
+                    <span>Сотрудничество и полная версия нот</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                </button>
             </div>
-
-            <button id="openModalBtn" class="cooperation-btn">
-                <span>Сотрудничество и полная версия нот</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-            </button>
             
         </div>
     </main>
@@ -244,31 +302,30 @@
 
             function openModal() { modalOverlay.classList.add('active'); document.body.style.overflow = 'hidden'; }
             function closeModal() { 
-    modalOverlay.classList.remove('active'); 
-    document.body.style.overflow = ''; 
-    
-    // Сбрасываем форму при ручном закрытии окна
-    setTimeout(() => {
-        if (contactForm) {
-            contactForm.classList.remove('hidden');
-            contactForm.reset();
-        }
-        if (formMessage) {
-            formMessage.style.display = 'none';
-        }
-    }, 300); // Небольшая задержка, чтобы форма не "моргала" в процессе анимации исчезновения окна
-}
+                modalOverlay.classList.remove('active'); 
+                document.body.style.overflow = ''; 
+                
+                setTimeout(() => {
+                    if (contactForm) {
+                        contactForm.classList.remove('hidden');
+                        contactForm.reset();
+                    }
+                    if (formMessage) {
+                        formMessage.style.display = 'none';
+                    }
+                }, 300); 
+            }
 
             if(openModalBtn) openModalBtn.addEventListener('click', openModal);
             if(closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
-            // Закрытие при клике по затемненному фону вокруг окна
+            
             if(modalOverlay) {
                 modalOverlay.addEventListener('click', (e) => {
                     if(e.target === modalOverlay) closeModal();
                 });
             }
 
-            // --- ЛОГИКА ОТПРАВКИ ФОРМЫ ---
+            // --- 2. ЛОГИКА ОТПРАВКИ ФОРМЫ ---
             const contactForm = document.getElementById('contactForm');
             const formMessage = document.getElementById('formMessage');
 
@@ -290,10 +347,7 @@
                         });
                         
                         if (response.ok) {
-                            // СКРЫВАЕМ САМУ ФОРМУ
                             contactForm.classList.add('hidden');
-                            
-                            // ПОКАЗЫВАЕМ СООБЩЕНИЕ ОБ УСПЕХЕ
                             formMessage.textContent = 'Сообщение успешно отправлено';
                             formMessage.className = 'form-message success';
                             formMessage.style.display = 'block';
