@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHILINE - Ссылки</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg: #f4f4f7; --card: #fff; --txt: #000; --mut: #66666e; --bio: #333339;
+            --lnk: rgba(0,0,0,.03); --brd: rgba(0,0,0,.05); --hov: rgba(0,0,0,.06);
+            --shd: 0 16px 40px rgba(0,0,0,.04); --blu: #1d9bf0;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0d0d11; --card: #16161a; --txt: #fff; --mut: #8e8e93; --bio: #c7c7cc;
+                --lnk: rgba(255,255,255,.05); --brd: rgba(255,255,255,.08); --hov: rgba(255,255,255,.1);
+                --shd: 0 16px 40px rgba(0,0,0,.3);
+            }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+        
+        body { 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: flex-start; /* Якорь сверху */
+            justify-content: center; 
+            background-color: var(--bg); 
+            color: var(--txt); 
+            padding: 10vh 16px 40px; /* Отступ 10% высоты экрана сверху */
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('assets/background_1.svg'); 
+            background-position: center; 
+            background-size: cover; 
+            background-repeat: no-repeat;
+            z-index: -1; 
+            transform: translateZ(0);
+            will-change: transform;
+        }
+        
+        .card { 
+            background: rgba(255, 255, 255, 0.85); 
+            border-radius: 28px; 
+            padding: 36px 24px; 
+            width: 100%; 
+            max-width: 420px; 
+            box-shadow: var(--shd); 
+            text-align: center; 
+        }        
+        
+        .ava { 
+            width: 96px; 
+            height: 96px; 
+            border-radius: 50%; 
+            object-fit: cover; 
+            padding: 3px; 
+            background: conic-gradient(
+                from 0deg, 
+                #ff3b30, #ff9500, #ffcc00, #4cd964, #5ac8fa, #007aff, #5856d6, #ff3b30
+            );
+            box-shadow: 0 6px 16px rgba(0,0,0,.1); 
+            margin-bottom: 16px; 
+        }
+        
+        .name { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px; }
+        .name i { color: var(--blu); font-size: 1.1rem; }
+        .title { font-size: .85rem; font-weight: 600; color: var(--mut); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
+        .bio { font-size: .92rem; color: var(--bio); line-height: 1.5; margin-bottom: 24px; }
+        
+        .links { display: flex; flex-direction: column; gap: 12px; }
+        .btn { display: flex; align-items: center; background: var(--lnk); border: 1px solid var(--brd); padding: 12px 14px; border-radius: 16px; text-decoration: none; color: var(--txt); transition: .15s ease; cursor: pointer; width: 100%; }
+        .btn:hover { background: var(--hov); transform: translateY(-1px); }
+        
+        .icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 12px; margin-right: 14px; flex-shrink: 0; }
+        .icon img { width: 40px; height: 40px; object-fit: contain; }
+        
+        .txt-wrap { display: flex; flex-direction: column; text-align: left; flex-grow: 1; }
+        .l-title { font-weight: 600; font-size: .95rem; }
+        .l-sub { font-size: .75rem; color: var(--mut); margin-top: 2px; }
+        
+        .arr { font-size: .85rem; color: var(--mut); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        a.btn:hover .arr { transform: translateX(2px); }
+        .dropdown.active .btn-toggle .arr { transform: rotate(180deg); }
+        
+        .dropdown { display: flex; flex-direction: column; gap: 0; }
+        
+        .dropdown-wrapper {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .dropdown.active .dropdown-wrapper {
+            grid-template-rows: 1fr;
+        }
+
+        .dropdown-content {
+            overflow: hidden;
+        }
+
+        .dropdown-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-left: 16px;
+            border-left: 2px solid var(--brd);
+            margin-left: 16px;
+            padding-top: 10px; 
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .dropdown.active .dropdown-inner {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .dropdown-inner .btn { padding: 10px 14px; }
+        .dropdown-inner .icon { width: 32px; height: 32px; margin-right: 12px; }
+        .dropdown-inner .icon img { width: 32px; height: 32px; }
+
+        .share { 
+            background: none; 
+            border: none; 
+            color: var(--mut); 
+            font-size: .85rem; 
+            margin-top: 20px; 
+            cursor: pointer; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+            padding: 6px 12px; 
+            transition: .2s color; 
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .share:hover { color: var(--txt); }
+        
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 100px); background: #000; color: #fff; padding: 8px 18px; border-radius: 20px; font-size: .85rem; transition: .2s ease; opacity: 0; pointer-events: none; z-index: 10; }
+        .toast.show { transform: translate(-50%, 0); opacity: 1; }
+        
+        @media (max-width: 400px) {
+            .card { padding: 28px 16px; } 
+            .icon { width: 36px; height: 36px; margin-right: 10px; } 
+            .icon img { width: 20px; height: 20px; }
+            .l-title { font-size: .9rem; }
+            .dropdown-inner { padding-left: 10px; margin-left: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <img src="assets/icon.jpg" alt="CHILINE" class="ava" onerror="this.style.display='none'">
+        <div class="name">CHILINE<i class="fa-solid fa-circle-check" aria-hidden="true"></i></div>
+        <div class="title">(шили́н)</div>
+        <p class="bio">Говорим и пишем о музыке которую любим!</p>
+
+        
+
+        <div class="links">
+
+                        <div class="dropdown">
+                <div class="btn btn-toggle" onclick="toggleDropdown(this)">
+                    <div class="icon"><img src="assets/lada.jpg" alt="Лада" style="border-radius: 50%; object-fit: cover;"></div>
+                    <div class="txt-wrap"><span class="l-title">Владислава Шилина</span><span class="l-sub">Показать соцсети</span></div>
+                    <i class="fa-solid fa-chevron-down arr" aria-hidden="true"></i>
+                </div>
+                <div class="dropdown-wrapper">
+                    <div class="dropdown-content">
+                        <div class="dropdown-inner">
+                            <a href="https://www.instagram.com/chiline_madame" class="btn" target="_blank">
+                                <div class="icon bg-ig"><img src="assets/instagram.svg" alt="Instagram"></div>
+                                <div class="txt-wrap"><span class="l-title">Instagram</span><span class="l-sub">@chiline_madame</span></div>
+                                <i class="fa-solid fa-chevron-right arr" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="dropdown">
+                <div class="btn btn-toggle" onclick="toggleDropdown(this)">
+                    <div class="icon"><img src="assets/vova.jpg" alt="Владимир" style="border-radius: 50%; object-fit: cover;"></div>
+                    <div class="txt-wrap"><span class="l-title">Владимир Шилин</span><span class="l-sub">Твой Вергилий в мире музыки</span></div>
+                    <i class="fa-solid fa-chevron-down arr" aria-hidden="true"></i>
+                </div>
+                <div class="dropdown-wrapper">
+                    <div class="dropdown-content">
+                        <div class="dropdown-inner">
+                            <a href="https://www.threads.com/@chiline_monsieur" class="btn" target="_blank">
+                                <div class="icon bg-th"><img src="assets/threads.svg" alt="Threads"></div>
+                                <div class="txt-wrap"><span class="l-title">Threads</span><span class="l-sub">@chiline_monsieur</span></div>
+                                <i class="fa-solid fa-chevron-right arr" aria-hidden="true"></i>
+                            </a>
+                            <a href="https://www.instagram.com/chiline_monsieur" class="btn" target="_blank">
+                                <div class="icon bg-ig"><img src="assets/instagram.svg" alt="Instagram"></div>
+                                <div class="txt-wrap"><span class="l-title">Instagram</span><span class="l-sub">@chiline_monsieur</span></div>
+                                <i class="fa-solid fa-chevron-right arr" aria-hidden="true"></i>
+                            </a>
+                            <a href="#" class="btn" target="_blank">
+                                <div class="icon bg-tt"><img src="assets/tiktok.svg" alt="TikTok"></div>
+                                <div class="txt-wrap"><span class="l-title">TikTok</span><span class="l-sub">@chiline_monsieur</span></div>
+                                <i class="fa-solid fa-chevron-right arr" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <a href="https://chiline.art" class="btn" target="_blank">
+                <div class="icon bg-web"><img src="assets/web.svg" alt="Сайт"></div>
+                <div class="txt-wrap"><span class="l-title">Наш сайт</span><span class="l-sub">Главная страница</span></div>
+                <i class="fa-solid fa-chevron-right arr" aria-hidden="true"></i>
+            </a>
+            
+            <a href="https://www.ozon.ru/seller/chiline/" class="btn" target="_blank">
+                <div class="icon bg-oz"><img src="assets/ozon.svg" alt="Ozon"></div>
+                <div class="txt-wrap"><span class="l-title">Магазин на Ozon</span><span class="l-sub">Наша продукция для музыкантов</span></div>
+                <i class="fa-solid fa-chevron-right arr" aria-hidden="true"></i>
+            </a>
+            
+            <a href="https://t.me/chiline" class="btn" target="_blank">
+                <div class="icon bg-tg"><img src="assets/telegram.svg" alt="Telegram"></div>
+                <div class="txt-wrap"><span class="l-title">Telegram</span><span class="l-sub">Говорим и пишем о музыке которую любим</span></div>
+                <i class="fa-solid fa-chevron-right arr" aria-hidden="true"></i>
+            </a>
+            
+            <a href="https://boosty.to/maison_chiline" class="btn" target="_blank">
+                <div class="icon bg-bo"><img src="assets/boosty.svg" alt="Boosty"></div>
+                <div class="txt-wrap"><span class="l-title">Boosty</span><span class="l-sub">Поддержка проекта</span></div>
+                <i class="fa-solid fa-chevron-right arr" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        <button class="share" id="shareBtn"><i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i> Поделиться профилем</button>
+    </div>
+
+    <div class="toast" id="toastMsg">Ссылка скопирована!</div>
+
+    <script>
+        function toggleDropdown(element) {
+            const dropdown = element.parentElement;
+            dropdown.classList.toggle('active');
+        }
+
+        const shareBtn = document.getElementById('shareBtn'), toast = document.getElementById('toastMsg');
+        let isSharing = false;
+
+        shareBtn.onclick = async () => {
+            if (isSharing) return;
+            const url = location.href;
+
+            if (navigator.share) {
+                isSharing = true;
+                try {
+                    await navigator.share({ title: document.title, url });
+                } catch {} finally { isSharing = false; }
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(url);
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2000);
+            } catch { 
+                alert('Ссылка на профиль: ' + url); 
+            }
+        };
+    </script>
+</body>
+</html>
