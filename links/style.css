@@ -14,8 +14,8 @@
 @media (prefers-color-scheme: dark) {
     :root {
         --bg: #0d0d11;
-        --card: #16161a;
         --card: rgba(22, 22, 26, 0.95);
+        --txt: #fff;
         --mut: #8e8e93;
         --bio: #c7c7cc;
         --lnk: rgba(255, 255, 255, .05);
