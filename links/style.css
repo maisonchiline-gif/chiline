@@ -1,6 +1,6 @@
 :root {
     --bg: #f4f4f7;
-    --card: #fff;
+    --card: rgba(255, 255, 255, 0.95);
     --txt: #000;
     --mut: #66666e;
     --bio: #333339;
@@ -15,7 +15,7 @@
     :root {
         --bg: #0d0d11;
         --card: #16161a;
-        --txt: #fff;
+        --card: rgba(22, 22, 26, 0.95);
         --mut: #8e8e93;
         --bio: #c7c7cc;
         --lnk: rgba(255, 255, 255, .05);
