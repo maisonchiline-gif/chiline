@@ -198,7 +198,7 @@ body::before {
 .arr {
     display: block;
     flex-shrink: 0;
-    transition: transform 0.3s ease-in-out; 
+    transition: transform 0.2s ease-in-out; 
     will-change: transform; /* Исправляет микро-дергания стрелки */
 }
 
@@ -217,7 +217,7 @@ body::before {
 .dropdown-content {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows 0.3s ease-in-out;
+    transition: grid-template-rows 0.2s ease-in-out;
     overflow: hidden;
 }
 
@@ -275,14 +275,14 @@ body::before {
     margin-top: 24px;
     cursor: pointer;
     display: inline-flex; align-items: center;
-    gap: 6px; padding: 8px 16px;
+    gap: 10px; padding: 8px 16px;
     border-radius: 20px;
     transition: background-color 0.2s, color 0.2s;
 }
 
 @media (hover: hover) {
     .share:hover {
-        background: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.2);
         color: var(--txt);
     }
 }
@@ -296,7 +296,7 @@ body::before {
     padding: 10px 20px;
     border-radius: 20px;
     font-size: 0.85rem; font-weight: 500;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1), opacity 0.2s ease;
     opacity: 0; pointer-events: none;
     z-index: 10;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
