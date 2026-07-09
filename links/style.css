@@ -1,4 +1,4 @@
-/* Для всей страницы */
+/* Для всей страницы — убираем скроллбары классическим способом */
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
     display: none;
@@ -20,7 +20,7 @@ body {
     padding: 10vh 16px 40px;
 }
 
-/* Задний фон: убрали хаки видеокарты, теперь он стабилен */
+/* Задний фон — чистый вектор, без нагрузки на систему */
 body::before {
     content: "";
     position: fixed;
@@ -35,33 +35,19 @@ body::before {
     z-index: -1;
 }
 
-/* Карточка: чистая статичная радужная рамка с вашей прозрачностью */
+/* КАРТОЧКА: Максимально плоская отрисовка, без псевдоэлементов, масок и градиентов */
 .card {
     padding: clamp(28px, 8vw, 36px) clamp(16px, 6vw, 24px);
-    background: var(--card); /* Сохраняет исходную прозрачность */
+    background: var(--card); /* Ваша прозрачность 0.95 полностью сохранена */
     border-radius: 28px;
     width: 100%;
     max-width: 420px;
     box-shadow: var(--shd);
     text-align: center;
     position: relative;
-    border: 3px solid transparent;
-    background-clip: padding-box;
     min-width: 250px;
-}
-
-/* Статичный радужный градиент строго по размеру рамки */
-.card::before {
-    content: "";
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    z-index: -1;
-    border-radius: 28px;
-    background: conic-gradient(from 45deg,
-            #ff3b30, #ff9500, #ffcc00, #4cd964, #5ac8fa, #007aff, #5856d6, #ff3b30);
+    /* Тонкая, едва заметная нейтральная рамка для премиального вида */
+    border: 1px solid var(--brd); 
 }
 
 .ava {
@@ -119,7 +105,7 @@ body::before {
     border-radius: 16px;
     text-decoration: none;
     color: var(--txt);
-    transition: transform .15s ease, background-color .15s ease;
+    transition: background-color .15s ease, transform .15s ease;
     cursor: pointer;
     width: 100%;
 }
@@ -164,13 +150,11 @@ body::before {
     margin-top: 2px;
 }
 
-/* ФИКС СТРЕЛОК: Добавили блочный тип и фиксацию центра вращения */
+/* ЖЕЛЕЗОБЕТОННЫЙ ФИКС СТРЕЛОК: Чистый блочный элемент с независимым вращением */
 .arr {
-    display: inline-block;
-    transform-origin: center;
-    vertical-align: middle;
+    display: block;
     flex-shrink: 0;
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 a.btn:hover .arr {
@@ -278,7 +262,7 @@ a.btn:hover .arr {
 :root {
     color-scheme: light;
     --bg: #f4f4f7;
-    --card: rgba(255, 255, 255, 0.95);
+    --card: rgba(255, 255, 255, 0.95); /* Исходная матовая прозрачность */
     --txt: #000;
     --mut: #66666e;
     --bio: #333339;
