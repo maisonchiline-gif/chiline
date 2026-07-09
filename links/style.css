@@ -145,12 +145,7 @@ body::before {
     color: var(--txt);
     cursor: pointer;
     text-align: left;
-    
-    /* 1. ИСПРАВЛЕНО: Добавлен эффект матового стекла (размытия) внутрь полей */
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
-    
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);   
     transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
