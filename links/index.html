@@ -1,121 +1,136 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CHILINE</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-    <div class="card">
-        <img src="assets/icon.jpg" alt="CHILINE" class="ava" width="96" height="96" decoding="async" onerror="this.style.display='none'">
-        <div class="name">
+    <main class="card">
+        <img src="assets/icon.jpg" alt="CHILINE" class="ava" width="96" height="96" decoding="async">
+        
+        <h1 class="name">
             CHILINE
             <svg class="verified-icon" viewBox="0 0 512 512" width="16" height="16"><path fill="var(--blu)" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM369 209L241 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L335 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/></svg>
-        </div>
-        <div class="title">(шили́н)</div>
+        </h1>
+        <h2 class="title">(шили́н)</h2>
         <p class="bio">Говорим и пишем о музыке, которую любим!</p>
         
-        <div class="links">
+        <section class="links">
+            
             <div class="dropdown">
-                <div class="btn btn-toggle" onclick="toggleDropdown(this)">
-                    <div class="icon"><img src="assets/lada.jpg" alt="Лада" width="40" height="40" decoding="async" style="border-radius: 50%; object-fit: cover;"></div>
-                    <div class="txt-wrap"><span class="l-title">Владислава Шилина</span><span class="l-sub"></span></div>
+                <button class="btn btn-toggle" onclick="toggleDropdown(this)" aria-expanded="false">
+                    <div class="icon"><img src="assets/lada.jpg" alt="Лада" width="40" height="40" decoding="async" class="round-img"></div>
+                    <div class="txt-wrap">
+                        <span class="l-title">Владислава Шилина</span>
+                    </div>
                     <svg class="arr" viewBox="0 0 512 512" width="14" height="14"><path fill="currentColor" d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
-                </div>
-                <div class="dropdown-wrapper">
-                    <div class="dropdown-content">
-                        <div class="dropdown-inner">
-                            <a href="https://www.instagram.com/chiline_madame" class="btn" target="_blank">
-                                <div class="icon bg-ig"><img src="assets/instagram.svg" alt="Instagram" width="32" height="32" loading="lazy" decoding="async"></div>
-                                <div class="txt-wrap"><span class="l-title">Instagram</span><span class="l-sub">@chiline_madame</span></div>
-                                <svg class="arr" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
-                            </a>
-                            <a href="https://www.tiktok.com/@chiline_madame" class="btn" target="_blank">
-                                <div class="icon bg-tt"><img src="assets/tiktok.svg" alt="TikTok" width="32" height="32" loading="lazy" decoding="async"></div>
-                                <div class="txt-wrap"><span class="l-title">TikTok</span><span class="l-sub">@chiline_madame</span></div>
-                                <svg class="arr" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
-                            </a>
-                        </div>
+                </button>
+                <div class="dropdown-content">
+                    <div class="dropdown-list">
+                        <a href="https://www.instagram.com/chiline_madame" class="btn btn-sub" target="_blank" rel="noopener noreferrer">
+                            <div class="icon"><img src="assets/instagram.svg" alt="Instagram" width="32" height="32" loading="lazy" decoding="async"></div>
+                            <div class="txt-wrap"><span class="l-title">Instagram</span><span class="l-sub">@chiline_madame</span></div>
+                            <svg class="arr-sub" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+                        </a>
+                        <a href="https://www.tiktok.com/@chiline_madame" class="btn btn-sub" target="_blank" rel="noopener noreferrer">
+                            <div class="icon"><img src="assets/tiktok.svg" alt="TikTok" width="32" height="32" loading="lazy" decoding="async"></div>
+                            <div class="txt-wrap"><span class="l-title">TikTok</span><span class="l-sub">@chiline_madame</span></div>
+                            <svg class="arr-sub" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+                        </a>
                     </div>
                 </div>
             </div>
 
             <div class="dropdown">
-                <div class="btn btn-toggle" onclick="toggleDropdown(this)">
-                    <div class="icon"><img src="assets/vova.jpg" alt="Владимир" width="40" height="40" decoding="async" style="border-radius: 50%; object-fit: cover;"></div>
-                    <div class="txt-wrap"><span class="l-title">Владимир Шилин</span><span class="l-sub"></span></div>
+                <button class="btn btn-toggle" onclick="toggleDropdown(this)" aria-expanded="false">
+                    <div class="icon"><img src="assets/vova.jpg" alt="Владимир" width="40" height="40" decoding="async" class="round-img"></div>
+                    <div class="txt-wrap">
+                        <span class="l-title">Владимир Шилин</span>
+                    </div>
                     <svg class="arr" viewBox="0 0 512 512" width="14" height="14"><path fill="currentColor" d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
-                </div>
-                <div class="dropdown-wrapper">
-                    <div class="dropdown-content">
-                        <div class="dropdown-inner">
-                            <a href="https://www.threads.com/@chiline_monsieur" class="btn" target="_blank">
-                                <div class="icon bg-th"><img src="assets/threads.svg" alt="Threads" width="32" height="32" loading="lazy" decoding="async"></div>
-                                <div class="txt-wrap"><span class="l-title">Threads</span><span class="l-sub">@chiline_monsieur</span></div>
-                                <svg class="arr" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
-                            </a>
-                            <a href="https://www.instagram.com/chiline_monsieur" class="btn" target="_blank">
-                                <div class="icon bg-ig"><img src="assets/instagram.svg" alt="Instagram" width="32" height="32" loading="lazy" decoding="async"></div>
-                                <div class="txt-wrap"><span class="l-title">Instagram</span><span class="l-sub">@chiline_monsieur</span></div>
-                                <svg class="arr" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
-                            </a>
-                            <a href="https://www.tiktok.com/@chiline_monsieur" class="btn" target="_blank">
-                                <div class="icon bg-tt"><img src="assets/tiktok.svg" alt="TikTok" width="32" height="32" loading="lazy" decoding="async"></div>
-                                <div class="txt-wrap"><span class="l-title">TikTok</span><span class="l-sub">@chiline_monsieur</span></div>
-                                <svg class="arr" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
-                            </a>
-                        </div>
+                </button>
+                <div class="dropdown-content">
+                    <div class="dropdown-list">
+                        <a href="https://www.threads.com/@chiline_monsieur" class="btn btn-sub" target="_blank" rel="noopener noreferrer">
+                            <div class="icon"><img src="assets/threads.svg" alt="Threads" width="32" height="32" loading="lazy" decoding="async"></div>
+                            <div class="txt-wrap"><span class="l-title">Threads</span><span class="l-sub">@chiline_monsieur</span></div>
+                            <svg class="arr-sub" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+                        </a>
+                        <a href="https://www.instagram.com/chiline_monsieur" class="btn btn-sub" target="_blank" rel="noopener noreferrer">
+                            <div class="icon"><img src="assets/instagram.svg" alt="Instagram" width="32" height="32" loading="lazy" decoding="async"></div>
+                            <div class="txt-wrap"><span class="l-title">Instagram</span><span class="l-sub">@chiline_monsieur</span></div>
+                            <svg class="arr-sub" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+                        </a>
+                        <a href="https://www.tiktok.com/@chiline_monsieur" class="btn btn-sub" target="_blank" rel="noopener noreferrer">
+                            <div class="icon"><img src="assets/tiktok.svg" alt="TikTok" width="32" height="32" loading="lazy" decoding="async"></div>
+                            <div class="txt-wrap"><span class="l-title">TikTok</span><span class="l-sub">@chiline_monsieur</span></div>
+                            <svg class="arr-sub" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+                        </a>
                     </div>
                 </div>
             </div>
 
-            <a href="https://chiline.art" class="btn" target="_blank">
-                <div class="icon bg-web"><img src="assets/chiline.art.png" alt="Сайт" width="40" height="40" decoding="async"></div>
-                <div class="txt-wrap"><span class="l-title">Наш сайт</span><span class="l-sub"></span></div>
-                <svg class="arr" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+            <a href="https://chiline.art" class="btn" target="_blank" rel="noopener noreferrer">
+                <div class="icon"><img src="assets/chiline.art.png" alt="Сайт" width="40" height="40" decoding="async"></div>
+                <div class="txt-wrap"><span class="l-title">Наш сайт</span></div>
+                <svg class="arr-sub" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
             </a>
 
-            <a href="https://www.ozon.ru/seller/chiline/" class="btn" target="_blank">
-                <div class="icon bg-oz"><img src="assets/ozon.svg" alt="Ozon" width="40" height="40" decoding="async"></div>
+            <a href="https://www.ozon.ru/seller/chiline/" class="btn" target="_blank" rel="noopener noreferrer">
+                <div class="icon"><img src="assets/ozon.svg" alt="Ozon" width="40" height="40" decoding="async"></div>
                 <div class="txt-wrap"><span class="l-title">Ozon</span><span class="l-sub">Наша канцелярия для музыкантов</span></div>
-                <svg class="arr" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+                <svg class="arr-sub" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
             </a>
 
-            <a href="https://t.me/chiline" class="btn" target="_blank">
-                <div class="icon bg-tg"><img src="assets/telegram.svg" alt="Telegram" width="40" height="40" decoding="async"></div>
-                <div class="txt-wrap"><span class="l-title">Telegram</span><span class="l-sub"></span></div>
-                <svg class="arr" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+            <a href="https://t.me/chiline" class="btn" target="_blank" rel="noopener noreferrer">
+                <div class="icon"><img src="assets/telegram.svg" alt="Telegram" width="40" height="40" decoding="async"></div>
+                <div class="txt-wrap"><span class="l-title">Telegram</span></div>
+                <svg class="arr-sub" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
             </a>
 
-            <a href="https://boosty.to/maison_chiline" class="btn" target="_blank">
-                <div class="icon bg-bo"><img src="assets/boosty.svg" alt="Boosty" width="40" height="40" decoding="async"></div>
-                <div class="txt-wrap"><span class="l-title">Boosty</span><span class="l-sub"></span></div>
-                <svg class="arr" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+            <a href="https://boosty.to/maison_chiline" class="btn" target="_blank" rel="noopener noreferrer">
+                <div class="icon"><img src="assets/boosty.svg" alt="Boosty" width="40" height="40" decoding="async"></div>
+                <div class="txt-wrap"><span class="l-title">Boosty</span></div>
+                <svg class="arr-sub" viewBox="0 0 320 512" width="12" height="12"><path fill="currentColor" d="M310.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L242.7 256 73.4 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
             </a>
-        </div>
+            
+        </section>
 
         <button class="share" id="shareBtn">
             <svg viewBox="0 0 448 512" width="14" height="14" style="margin-right: 6px;"><path fill="currentColor" d="M246.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 101.3V448c0 17.7 14.3 32 32 32s32-14.3 32-32V101.3l73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"/></svg>
             Поделиться профилем
         </button>
-    </div>
+    </main>
 
     <div class="toast" id="toastMsg">Ссылка скопирована!</div>
 
     <script>
-        function toggleDropdown(element) {
-            const dropdown = element.parentElement;
-            dropdown.classList.toggle('active');
-        }
+        function toggleDropdown(btn) {
+    const currentDropdown = btn.parentElement;
+    // Запоминаем, был ли открыт список, по которому мы кликнули
+    const isCurrentlyActive = currentDropdown.classList.contains('active');
 
-        const shareBtn = document.getElementById('shareBtn'), toast = document.getElementById('toastMsg');
+    // 1. Принудительно закрываем ВСЕ списки на странице
+    document.querySelectorAll('.dropdown').forEach(dropdown => {
+        dropdown.classList.remove('active');
+        dropdown.querySelector('.btn-toggle').setAttribute('aria-expanded', 'false');
+    });
+
+    // 2. Если тот, на который кликнули, был закрыт — открываем его
+    if (!isCurrentlyActive) {
+        currentDropdown.classList.add('active');
+        btn.setAttribute('aria-expanded', 'true');
+    }
+}
+
+        const shareBtn = document.getElementById('shareBtn');
+        const toast = document.getElementById('toastMsg');
         let isSharing = false;
 
-        shareBtn.onclick = async () => {
+        shareBtn.addEventListener('click', async () => {
             if (isSharing) return;
             const url = location.href;
 
@@ -123,7 +138,11 @@
                 isSharing = true;
                 try {
                     await navigator.share({ title: document.title, url });
-                } catch { } finally { isSharing = false; }
+                } catch (e) { 
+                    // Ignore abort errors
+                } finally { 
+                    isSharing = false; 
+                }
                 return;
             }
 
@@ -131,10 +150,10 @@
                 await navigator.clipboard.writeText(url);
                 toast.classList.add('show');
                 setTimeout(() => toast.classList.remove('show'), 2000);
-            } catch {
+            } catch (e) {
                 alert('Ссылка на профиль: ' + url);
             }
-        };
+        });
     </script>
 </body>
 </html>
