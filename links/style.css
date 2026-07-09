@@ -2,18 +2,18 @@
 :root {
     color-scheme: light;
     --bg: #f4f4f7;
-    --card: rgba(224, 224, 224, 0);
+    /* Изменяем прозрачность карточки с 0 до 0.4 или 0.5 */
+    --card: rgba(255, 255, 255, 0.4); 
     --txt: #000000;
     --mut: #212125;
     --bio: #333339;
     
-    --lnk: rgba(255, 255, 255, 0.9); 
-    --brd: rgb(255, 255, 255, 0.6); 
+    --lnk: rgba(255, 255, 255, 0.85); 
+    --brd: rgba(255, 255, 255, 0.6); 
     --hov: rgba(255, 255, 255, 0.6); 
     --act: rgba(255, 255, 255, 0.6); 
     
-    /* ИСПРАВЛЕНО: Равномерное, красивое свечение вокруг всей карточки */
-    --shd: 0 0 80px rgba(255, 255, 255, 0.6), 0 0 40px rgba(255, 255, 255, 0.3);
+    --shd: 0 10px 40px rgba(0, 0, 0, 0.06); /* Делаем тень более естественной (темной, но мягкой) */
     --blu: #1d9bf0;
 }
 
@@ -63,7 +63,7 @@ body::before {
     width: 100%;
     max-width: 420px;
     box-shadow: var(--shd);
-    border: 3px solid rgb(255, 255, 255);
+    border: 3px solid rgb(255, 255, 255); /* 3px слишком толстый, 1px или 1.5px смотрится изящнее */
     padding: clamp(28px, 8vw, 36px) clamp(16px, 6vw, 24px);
     text-align: center;
     z-index: 1;
@@ -204,6 +204,7 @@ body::before {
     display: block;
     flex-shrink: 0;
     transition: transform 0.3s ease-in-out; 
+    will-change: transform; /* Исправляет микро-дергания стрелки */
 }
 
 .arr-sub {
@@ -243,9 +244,15 @@ body::before {
 /* Внутренние ссылки выпадающего меню */
 .btn-sub {
     margin-top: 10px;
-    margin-left: 24px; /* Сдвигаем кнопку вправо */
-    width: calc(100% - 24px); /* Корректируем ширину, чтобы не вылезла за края */
-    padding: 8px 12px; /* Делаем кнопку чуть менее пухлой по высоте */
+    margin-left: 24px;
+    width: calc(100% - 24px);
+    padding: 8px 12px;
+    
+    /* Отключаем размытие для подпунктов */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    /* Делаем фон чуть более непрозрачным, чтобы компенсировать отсутствие блюра */
+    background: rgba(255, 255, 255, 0.95); 
 }
 
 /* Уменьшаем иконку соцсети */
