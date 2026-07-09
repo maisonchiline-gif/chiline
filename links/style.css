@@ -1,37 +1,3 @@
-:root {
-    --bg: #f4f4f7;
-    --card: rgba(255, 255, 255, 0.95);
-    --txt: #000;
-    --mut: #66666e;
-    --bio: #333339;
-    --lnk: rgba(0, 0, 0, .03);
-    --brd: rgba(0, 0, 0, .05);
-    --hov: rgba(0, 0, 0, .06);
-    --shd: 0 16px 40px rgba(0, 0, 0, .04);
-    --blu: #1d9bf0;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg: #0d0d11;
-        --card: rgba(22, 22, 26, 0.95);
-        --txt: #fff;
-        --mut: #8e8e93;
-        --bio: #c7c7cc;
-        --lnk: rgba(255, 255, 255, .05);
-        --brd: rgba(255, 255, 255, .08);
-        --hov: rgba(255, 255, 255, .1);
-        --shd: 0 16px 40px rgba(0, 0, 0, .3);
-    }
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: system-ui, -apple-system, sans-serif;
-}
-
 /* Для всей страницы */
 html,
 body {
@@ -79,7 +45,7 @@ body::before {
 /* 1. Регистрируем CSS-переменную для анимации угла (без JS!) */
 .card {
     padding: clamp(28px, 8vw, 36px) clamp(16px, 6vw, 24px);
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--card); /* Теперь использует переменную с нужной прозрачностью */
     border-radius: 28px;
     width: 100%;
     max-width: 420px;
@@ -197,7 +163,6 @@ body::before {
 }
 
 .icon img {
-    /* Зависит от того, какой был максимальный размер (предположим 40px) */
     width: clamp(35px, 12vw, 40px);
     height: clamp(35px, 12vw, 40px);
     object-fit: contain;
@@ -211,7 +176,6 @@ body::before {
 }
 
 .l-title {
-    /* Текст тоже будет плавно скейлиться */
     font-size: clamp(0.9rem, 6vw, 0.95rem);
     font-weight: 600;
 }
@@ -257,7 +221,6 @@ a.btn:hover .arr {
 }
 
 .dropdown-inner {
-    /* Отступы сужаются на маленьких экранах */
     padding-left: clamp(10px, 3.5vw, 16px);
     margin-left: clamp(10px, 3.5vw, 16px);
     
@@ -336,4 +299,25 @@ a.btn:hover .arr {
     syntax: "<angle>";
     initial-value: 0deg;
     inherits: false;
+}
+
+:root {
+    color-scheme: light; /* Блокируем принудительное включение темной темы браузером смартфона */
+    --bg: #f4f4f7;
+    --card: rgba(255, 255, 255, 0.95);
+    --txt: #000;
+    --mut: #66666e;
+    --bio: #333339;
+    --lnk: rgba(0, 0, 0, .03);
+    --brd: rgba(0, 0, 0, .05);
+    --hov: rgba(0, 0, 0, .06);
+    --shd: 0 16px 40px rgba(0, 0, 0, .04);
+    --blu: #1d9bf0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, sans-serif;
 }
