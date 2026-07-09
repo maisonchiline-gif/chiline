@@ -203,7 +203,7 @@ body::before {
 .arr {
     display: block;
     flex-shrink: 0;
-    transition: transform 0.5s ease-in-out; 
+    transition: transform 0.3s ease-in-out; 
 }
 
 .arr-sub {
@@ -221,7 +221,7 @@ body::before {
 .dropdown-content {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows 0.5s ease-in-out;
+    transition: grid-template-rows 0.3s ease-in-out;
     overflow: hidden;
 }
 
