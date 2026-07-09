@@ -1,4 +1,4 @@
-/* Развернули вложенность для старых браузеров */
+/* Для всей страницы */
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
     display: none;
@@ -20,6 +20,7 @@ body {
     padding: 10vh 16px 40px;
 }
 
+/* Задний фон: убрали хаки видеокарты, теперь он стабилен */
 body::before {
     content: "";
     position: fixed;
@@ -31,29 +32,25 @@ body::before {
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
-    z-index: -2;
-    transform: translateZ(0);
-    will-change: transform;
+    z-index: -1;
 }
 
-/* Пересобранная структура карточки для аппаратного ускорения */
+/* Карточка: чистая статичная радужная рамка с вашей прозрачностью */
 .card {
     padding: clamp(28px, 8vw, 36px) clamp(16px, 6vw, 24px);
-    background: var(--card); /* Теперь правильно адаптируется под темную тему */
+    background: var(--card); /* Сохраняет исходную прозрачность */
     border-radius: 28px;
     width: 100%;
     max-width: 420px;
     box-shadow: var(--shd);
     text-align: center;
     position: relative;
-    min-width: 250px;
-    
-    /* Элегантный метод создания рамки без багов рендеринга */
     border: 3px solid transparent;
     background-clip: padding-box;
+    min-width: 250px;
 }
 
-/* Статичный радужный градиент под карточкой */
+/* Статичный радужный градиент строго по размеру рамки */
 .card::before {
     content: "";
     position: absolute;
@@ -167,7 +164,11 @@ body::before {
     margin-top: 2px;
 }
 
+/* ФИКС СТРЕЛОК: Добавили блочный тип и фиксацию центра вращения */
 .arr {
+    display: inline-block;
+    transform-origin: center;
+    vertical-align: middle;
     flex-shrink: 0;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
