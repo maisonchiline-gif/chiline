@@ -1,0 +1,1570 @@
+{
+  "name": "Op. 18",
+  "children": [
+    {
+      "name": "Первая часть",
+      "children": [
+        {
+          "name": "Вступление",
+          "short": "Вступление",
+          "time": "00:01",
+          "children": [
+            {
+              "name": "",
+              "children": [
+                {
+                  "name": "Первая тема",
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 8,
+                      "value": 8
+                    },
+                    {
+                      "name": "Период 2",
+                      "short": 2,
+                      "value": 2,
+                      "time": "00:36"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Экспозиция",
+          "short": "Экспозиция",
+          "time": "00:39",
+          "children": [
+            {
+              "name": "Главная партия",
+              "short": "ГП",
+              "children": [
+                {
+                  "name": "Первая тема",
+                  "short": "a",
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 8,
+                      "value": 8
+                    },
+                    {
+                      "name": "Период 2",
+                      "short": 8,
+                      "value": 8,
+                      "time": "00:51"
+                    }
+                  ]
+                },
+                {
+                  "name": "Вторая тема",
+                  "time": "01:03",
+                  "short": "b",
+                  "children": [
+                    {
+                      "name": "Построение 1",
+                      "short": 28,
+                      "value": 28
+                    },
+                    {
+                      "name": "Построение 2",
+                      "short": 8,
+                      "value": 8,
+                      "time": "01:52"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Связующая партия",
+              "time": "02:03",
+              "short": "С",
+              "children": [
+                {
+                  "name": "Раздел 1",
+                  "children": [
+                    {
+                      "name": "Построение 2",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                },
+                {
+                  "name": "Раздел 2",
+                  "time": "02:10",
+                  "children": [
+                    {
+                      "name": "Построение 2",
+                      "short": 4,
+                      "value": 4
+                    }
+                  ]
+                },
+                {
+                  "name": "Раздел 3",
+                  "time": "02:13",
+                  "children": [
+                    {
+                      "name": "Построение 2",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Побочная партия",
+              "short": "ПП",
+              "time": "02:27",
+              "children": [
+                {
+                  "name": "Раздел 1",
+                  "children": [
+                    {
+                      "name": "Элемент 1",
+                      "short": 10,
+                      "value": 10
+                    },
+                    {
+                      "name": "Элемент 2",
+                      "short": 10,
+                      "value": 10,
+                      "time": "02:54"
+                    },
+                    {
+                      "name": "Элемент 3",
+                      "short": 10,
+                      "value": 10,
+                      "time": "03:21"
+                    }
+                  ]
+                },
+                {
+                  "name": "Раздел 2",
+                  "time": "03:45",
+                  "children": [
+                    {
+                      "name": "Фраза 1",
+                      "short": 8,
+                      "value": 8
+                    },
+                    {
+                      "name": "Фраза 2",
+                      "short": 12,
+                      "value": 12,
+                      "time": "04:01"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Заключительная партия",
+              "time": "04:11",
+              "short": "З",
+              "children": [
+                {
+                  "name": "Раздел 1",
+                  "children": [
+                    {
+                      "name": "Мотив 1",
+                      "short": 8,
+                      "value": 8
+                    },
+                    {
+                      "name": "Мотив 2",
+                      "short": 4,
+                      "value": 4,
+                      "time": "04:32"
+                    }
+                  ]
+                },
+                {
+                  "name": "Раздел 2",
+                  "time": "04:58",
+                  "children": [
+                    {
+                      "name": "Ход 1",
+                      "short": 8,
+                      "value": 8
+                    },
+                    {
+                      "name": "Ход 2",
+                      "short": 8,
+                      "value": 8,
+                      "time": "05:08"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Разработка",
+          "time": "05:18",
+          "short": "Разработка",
+          "children": [
+            {
+              "name": "1-й раздел",
+              "short": "I",
+              "children": [
+                {
+                  "name": "Раздел 1",
+                  "children": [
+                    {
+                      "name": "Построение 2",
+                      "short": 8,
+                      "value": 8
+                    },
+                    {
+                      "name": "Построение 3",
+                      "short": 8,
+                      "value": 8,
+                      "time": "05:28"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "2-й раздел",
+              "time": "05:38",
+              "short": "II",
+              "children": [
+                {
+                  "name": "Проведение 1",
+                  "children": [
+                    {
+                      "name": "Звено 1",
+                      "short": 8,
+                      "value": 8
+                    },
+                    {
+                      "name": "Звено 2",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                },
+                {
+                  "name": "Проведение 2",
+                  "children": [
+                    {
+                      "name": "Звено 1",
+                      "short": 4,
+                      "value": 4,
+                      "time": "05:55"
+                    },
+                    {
+                      "name": "Звено 2",
+                      "short": 4,
+                      "value": 4,
+                      "time": "06:00"
+                    },
+                    {
+                      "name": "Звено 3",
+                      "short": 4,
+                      "value": 4,
+                      "time": "06:04"
+                    },
+                    {
+                      "name": "Звено 4",
+                      "short": 4,
+                      "value": 4,
+                      "time": "06:09"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "3-й раздел",
+              "time": "06:13",
+              "short": "III",
+              "children": [
+                {
+                  "name": "Элемент 1",
+                  "children": [
+                    {
+                      "name": "a",
+                      "short": 4,
+                      "value": 4
+                    },
+                    {
+                      "name": "b",
+                      "short": 4,
+                      "value": 4,
+                      "time": "06:18"
+                    }
+                  ]
+                },
+                {
+                  "name": "Элемент 2",
+                  "time": "06:23",
+                  "children": [
+                    {
+                      "name": "a",
+                      "short": 4,
+                      "value": 4
+                    },
+                    {
+                      "name": "b",
+                      "short": 4,
+                      "value": 4,
+                      "time": "06:27"
+                    }
+                  ]
+                },
+                {
+                  "name": "Элемент 3",
+                  "time": "06:32",
+                  "children": [
+                    {
+                      "name": "a",
+                      "short": 4,
+                      "value": 4
+                    },
+                    {
+                      "name": "b",
+                      "short": 4,
+                      "value": 4,
+                      "time": "06:37"
+                    }
+                  ]
+                },
+                {
+                  "name": "Элемент 4",
+                  "time": "06:42",
+                  "children": [
+                    {
+                      "name": "a",
+                      "short": 2,
+                      "value": 2
+                    },
+                    {
+                      "name": "b",
+                      "short": 2,
+                      "value": 2,
+                      "time": "06:44"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Предыкт",
+              "time": "06:47",
+              "short": "П",
+              "children": [
+                {
+                  "name": "a",
+                  "children": [
+                    {
+                      "name": "a",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Реприза",
+          "time": "06:58",
+          "short": "Реприза",
+          "children": [
+            {
+              "name": "Главная партия",
+              "short": "ГП",
+              "children": [
+                {
+                  "name": "Первая тема",
+                  "short": "a",
+                  "children": [
+                    {
+                      "name": "т1",
+                      "short": 8,
+                      "value": 8
+                    },
+                    {
+                      "name": "т2",
+                      "short": 8,
+                      "value": 8,
+                      "time": "07:10"
+                    }
+                  ]
+                },
+                {
+                  "name": "Вторая тема",
+                  "time": "07:24",
+                  "short": "b",
+                  "children": [
+                    {
+                      "name": "в1",
+                      "short": 28,
+                      "value": 28
+                    },
+                    {
+                      "name": "в2",
+                      "short": 8,
+                      "value": 8,
+                      "time": "08:18"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Побочная партия",
+              "time": "08:37",
+              "short": "ПП",
+              "children": [
+                {
+                  "name": "в1",
+                  "children": [
+                    {
+                      "name": "в1",
+                      "short": 16,
+                      "value": 16
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Заключительная партия",
+              "time": "09:12",
+              "short": "З",
+              "children": [
+                {
+                  "name": "в1",
+                  "children": [
+                    {
+                      "name": "в1",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Кода",
+          "time": "09:30",
+          "short": "Кода",
+          "children": [
+            {
+              "name": "1-й раздел",
+              "short": "I",
+              "children": [
+                {
+                  "name": "Блок 1",
+                  "children": [
+                    {
+                      "name": "1",
+                      "short": 4,
+                      "value": 4
+                    },
+                    {
+                      "name": "2",
+                      "short": 4,
+                      "value": 4,
+                      "time": "09:40"
+                    },
+                    {
+                      "name": "3",
+                      "short": 4,
+                      "value": 4,
+                      "time": "09:50"
+                    },
+                    {
+                      "name": "4",
+                      "short": 4,
+                      "value": 4,
+                      "time": "10:00"
+                    }
+                  ]
+                },
+                {
+                  "name": "Блок 2",
+                  "time": "10:11",
+                  "children": [
+                    {
+                      "name": "1",
+                      "short": 8,
+                      "value": 8
+                    },
+                    {
+                      "name": "2",
+                      "short": 8,
+                      "value": 8,
+                      "time": "10:39"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "2-й раздел",
+              "time": "10:57",
+              "short": "II",
+              "children": [
+                {
+                  "name": "а",
+                  "children": [
+                    {
+                      "name": "1",
+                      "short": 4,
+                      "value": 4
+                    },
+                    {
+                      "name": "2",
+                      "short": 4,
+                      "value": 4,
+                      "time": "11:06"
+                    }
+                  ]
+                },
+                {
+                  "name": "б",
+                  "time": "11:15",
+                  "children": [
+                    {
+                      "name": "1",
+                      "short": 2,
+                      "value": 2
+                    },
+                    {
+                      "name": "2",
+                      "short": 2,
+                      "value": 2,
+                      "time": "11:18"
+                    }
+                  ]
+                },
+                {
+                  "name": "в",
+                  "time": "11:22",
+                  "children": [
+                    {
+                      "name": "1",
+                      "short": 2,
+                      "value": 2
+                    },
+                    {
+                      "name": "2",
+                      "short": 2,
+                      "value": 2,
+                      "time": "11:24"
+                    }
+                  ]
+                },
+                {
+                  "name": "г",
+                  "time": "11:26",
+                  "children": [
+                    {
+                      "name": "1",
+                      "short": 4,
+                      "value": 4
+                    },
+                    {
+                      "name": "2",
+                      "short": 2,
+                      "value": 2,
+                      "time": "11:31"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Вторая часть",
+      "children": [
+        {
+          "name": "Вступление",
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "1",
+                      "short": 4,
+                      "value": 10
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Экспозиция",
+          "children": [
+            {
+              "name": "Вступление",
+              "short": "Вступ.",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "1",
+                      "short": 4,
+                      "value": 4
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Тема",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 1",
+                      "short": 4,
+                      "value": 4
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 2",
+                      "short": 3,
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 3",
+                      "short": 3,
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 4",
+                      "short": 3,
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 5",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Тема",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 1",
+                      "short": 4,
+                      "value": 4
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 2",
+                      "short": 3,
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 3",
+                      "short": 3,
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 4",
+                      "short": 3,
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 5",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "З",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 1",
+                      "short": 4,
+                      "value": 4
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 2",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 3",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Разработка",
+          "children": [
+            {
+              "name": "I",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Период 2",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Период 3",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "II",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Период 2",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Период 3",
+                      "short": 6,
+                      "value": 6
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "III",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 4,
+                      "value": 4
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Период 2",
+                      "short": 4,
+                      "value": 4
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Период 3",
+                      "short": 4,
+                      "value": 4
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Период 4",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "C",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 15,
+                      "value": 15
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "К",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 7,
+                      "value": 7
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Реприза",
+          "children": [
+            {
+              "name": "Вступ.",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период",
+                      "short": 4,
+                      "value": 4
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Тема",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 1",
+                      "short": 4,
+                      "value": 4
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 2",
+                      "short": 3,
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 3",
+                      "short": 3,
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 4",
+                      "short": 3,
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 5",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Кода",
+          "children": [
+            {
+              "name": "",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 1",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 2",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 1",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 2",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 1",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 2",
+                      "short": 2,
+                      "value": 2
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Фраза 1",
+                      "short": 3,
+                      "value": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Третья часть",
+      "children": [
+        {
+          "name": "Вступление",
+          "children": [
+            {
+              "name": "Вступ.",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период",
+                      "short": 20,
+                      "value": 20
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "К",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период",
+                      "short": 14,
+                      "value": 14
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "С",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Экспозиция",
+          "children": [
+            {
+              "name": "ГП",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "a",
+                      "short": 10,
+                      "value": 10
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "b",
+                      "short": 12,
+                      "value": 12
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "a",
+                      "short": 10,
+                      "value": 10
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "c",
+                      "short": 15,
+                      "value": 15
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "a",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "С",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "ПП",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 16,
+                      "value": 16
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Периoд 2",
+                      "short": 24,
+                      "value": 24
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Периoд 3",
+                      "short": 4,
+                      "value": 4
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "З",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период",
+                      "short": 12,
+                      "value": 12
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Разработка",
+          "children": [
+            {
+              "name": "1-й раздел",
+              "short": "I",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "a",
+                      "short": 10,
+                      "value": 10
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "c",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "a",
+                      "short": 26,
+                      "value": 26
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "2-й раздел",
+              "short": "II",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Фугато",
+                      "short": 42,
+                      "value": 42
+                    }
+                  ],
+                  "name": "Ф"
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 8,
+                      "value": 8
+                    },
+                    {
+                      "name": "Период 2",
+                      "short": 16,
+                      "value": 16
+                    },
+                    {
+                      "name": "Период 3",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 6,
+                      "value": 6
+                    },
+                    {
+                      "name": "ГП",
+                      "value": 8
+                    }
+                  ],
+                  "name": "ГП"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Реприза",
+          "children": [
+            {
+              "name": "С",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период",
+                      "short": 8,
+                      "value": 8
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "ПП",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период 1",
+                      "short": 16,
+                      "value": 16
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Период 2",
+                      "short": 24,
+                      "value": 24
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Период 3",
+                      "short": 6,
+                      "value": 6
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "З",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Период",
+                      "short": 12,
+                      "value": 12
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Кода",
+          "children": [
+            {
+              "name": "1-й раздел",
+              "children": [
+                {
+                  "name": "ГП",
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "name": "a",
+                          "short": 16,
+                          "value": 16
+                        }
+                      ]
+                    },
+                    {
+                      "children": [
+                        {
+                          "name": "b",
+                          "short": 10,
+                          "value": 10
+                        }
+                      ]
+                    },
+                    {
+                      "children": [
+                        {
+                          "name": "a",
+                          "short": 8,
+                          "value": 8
+                        }
+                      ]
+                    },
+                    {
+                      "children": [
+                        {
+                          "name": "Период",
+                          "short": 16,
+                          "value": 16
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "С",
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "name": "Период 1",
+                          "short": 8,
+                          "value": 8
+                        }
+                      ]
+                    },
+                    {
+                      "children": [
+                        {
+                          "name": "Период 2",
+                          "short": 4,
+                          "value": 4
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "К",
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "name": "1",
+                          "short": 1,
+                          "value": 1
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "short": "I"
+            },
+            {
+              "name": "2-й раздел",
+              "short": "II",
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "name": "Период 1",
+                          "short": 24,
+                          "value": 24
+                        }
+                      ]
+                    },
+                    {
+                      "children": [
+                        {
+                          "name": "Период 2",
+                          "short": 4,
+                          "value": 4
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "children": [
+                    {
+                      "name": "Раздел 1",
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "name": "Фраза 1",
+                              "short": 4,
+                              "value": 4
+                            }
+                          ]
+                        },
+                        {
+                          "children": [
+                            {
+                              "name": "Фраза 2",
+                              "short": 4,
+                              "value": 4
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Раздел 2",
+                      "children": [
+                        {
+                          "children": [
+                            {
+                              "name": "Фраза 1",
+                              "short": 4,
+                              "value": 4
+                            }
+                          ]
+                        },
+                        {
+                          "children": [
+                            {
+                              "name": "Фраза 2",
+                              "short": 4,
+                              "value": 4
+                            }
+                          ]
+                        },
+                        {
+                          "children": [
+                            {
+                              "name": "Фраза 3",
+                              "short": 2,
+                              "value": 2
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

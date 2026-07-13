@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Интерактивный Визуализатор Музыкальной Формы</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://w.soundcloud.com/player/api.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="controls-panel">
+            <div class="controls-row">
+                <div class="custom-player">
+                    <button id="playPauseBtn" class="play-btn" aria-label="Воспроизведение">
+                        <svg id="iconPlay" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+                        <svg id="iconPause" viewBox="0 0 24 24" width="20" height="20" style="display: none;"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
+                    <div class="time-display" id="currentTimeDisp">0:00</div>
+                    <input type="range" id="seekSlider" class="seek-slider" value="0" step="0.1" aria-label="Прокрутка">
+                    <div class="time-display" id="durationDisp">0:00</div>
+                </div>
+            </div>
+            
+            <div class="soundcloud-wrapper">
+                <iframe id="soundcloudPlayer" width="100%" height="100%" scrolling="no" frameborder="no" allow="autoplay" 
+                    src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fsoundcloud.com%2Fprimeartonline-piano-covers%2Frachmaninoff-piano-concerto-no-2-zimerman&color=%23ff3b30&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false">
+                </iframe>
+            </div>
+            
+            <div class="controls-row">
+                <div class="slider-group">
+                    <label for="depthSlider">Глубина отображения:</label>
+                    <span id="depthValue">5</span>
+                    <input type="range" id="depthSlider" min="1" max="5" value="5" style="cursor: pointer;">
+                </div>
+
+                <div class="mode-toggle">
+                    <button id="btnFixed" class="mode-btn active" data-mode="fixed">Равные доли</button>
+                    <button id="btnReal" class="mode-btn" data-mode="real">Реальный размер</button>
+                </div>
+
+                <div class="mode-toggle">
+                    <button class="mode-btn" id="btnExportSVG">SVG</button>
+                    <button class="mode-btn" id="btnExportPNG">PNG</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="visualizer-area">
+            <div id="tooltip" class="tooltip"></div>
+            <div id="chart"></div>
+        </div>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+    <script type="module" src="./js/app.js"></script>
+    <script type="module" src="./js/ThemeManager.js"></script>
+</body>
+</html>

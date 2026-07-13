@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Кварто-квинтовый квадрат</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ========================================= */
+    /* БАЗОВАЯ ЭСТЕТИКА И ТИПОГРАФИКА            */
+    /* ========================================= */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100dvh;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff; color: #000;
+      font-family: "Old Standard TT", -apple-system, BlinkMacSystemFont, "Segoe UI", serif;
+      -webkit-tap-highlight-color: transparent; 
+      overflow: auto;
+    }
+
+    /* АБСОЛЮТНЫЙ КОНТЕЙНЕР */
+    .app-wrapper {
+      container-type: inline-size;
+      width: 90vw; 
+      max-width: min(450px, 46dvh);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 2cqw 0;
+    }
+
+    /* ИСПРАВЛЕННАЯ КНОПКА "НАЗАД" */
+    /* ИСПРАВЛЕННАЯ КНОПКА "НАЗАД" */
+    .back-link {
+      align-self: center;     /* Выравниваем строго по центру контейнера */
+      margin-bottom: 3cqw;    /* Отступ до заголовка */
+      font-size: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      letter-spacing: 0.15em; color: #999; text-decoration: none; transition: color 0.2s;
+    }
+    .back-link:hover { color: #000; }
+
+    header { text-align: center; margin-bottom: 5cqw; width: 100%; }
+
+    .brand-title {
+      font-size: 7.5cqw;
+      font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase; 
+      margin-bottom: 1cqw; line-height: 1; text-align: center;
+    }
+
+    .brand-subtitle {
+      font-size: 2.8cqw; letter-spacing: 0.2em; text-transform: uppercase;
+      color: #777; font-family: -apple-system, sans-serif; 
+    }
+
+    main { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+    /* ========================================= */
+    /* ЭЛЕМЕНТЫ УПРАВЛЕНИЯ И ТУМБЛЕР             */
+    /* ========================================= */
+    .controls-panel {
+      display: flex; gap: 4cqw; margin-bottom: 3cqw;
+      font-family: -apple-system, sans-serif; font-size: 2.8cqw;
+      text-transform: uppercase; letter-spacing: 0.1em; color: #555;
+    }
+    .controls-panel label { display: flex; align-items: center; gap: 1.5cqw; cursor: pointer; user-select: none; }
+    .controls-panel input[type="checkbox"] { accent-color: #000; cursor: pointer; }
+
+    .mode-toggle-container {
+      display: flex; align-items: center; gap: 3cqw; margin-bottom: 5cqw; user-select: none;
+    }
+    .mode-label {
+      font-family: -apple-system, sans-serif; font-size: 2.6cqw;
+      letter-spacing: 0.15em; text-transform: uppercase; color: #aaa;
+      cursor: pointer; transition: color 0.3s;
+    }
+    .mode-label.active { color: #000; font-weight: 600; }
+    
+    .toggle-pill {
+      position: relative; width: 12cqw; height: 6cqw;
+      background: #f0f0f0; border-radius: 6cqw; cursor: pointer;
+      border: 1px solid #ddd; transition: background 0.3s, border-color 0.3s;
+    }
+    .toggle-knob {
+      position: absolute; top: 0.4cqw; left: 0.4cqw; width: 4.8cqw; height: 4.8cqw;
+      background: #000; border-radius: 50%;
+      transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    #toggle-swap:checked ~ .toggle-knob {
+      transform: translateX(6cqw);
+    }
+
+    .custom-select-wrapper { position: relative; width: 100%; margin-bottom: 5cqw; font-family: -apple-system, sans-serif; user-select: none; }
+    .custom-select-trigger { display: flex; justify-content: space-between; align-items: center; padding: 3cqw 2cqw; border-bottom: 1px solid #000; cursor: pointer; font-size: 3cqw; letter-spacing: 0.15em; text-transform: uppercase; transition: box-shadow 0.2s ease; }
+    .custom-select-trigger:hover { box-shadow: 0 1px 0 0 #000; }
+    .custom-select-trigger .arrow { width: 1.8cqw; height: 1.8cqw; border-bottom: 1px solid #000; border-right: 1px solid #000; transform: translateY(-0.5cqw) rotate(45deg); transition: transform 0.3s ease; }
+    .custom-select-wrapper.open .arrow { transform: translateY(0.5cqw) rotate(-135deg); }
+    
+    .custom-options { position: absolute; top: 100%; left: 0; width: 100%; background: #fff; border: 1px solid #000; border-top: none; z-index: 100; opacity: 0; visibility: hidden; transform: translateY(-5px); transition: all 0.3s ease; box-shadow: 0 5cqw 10cqw rgba(0,0,0,0.06); max-height: 35dvh; overflow-y: auto; }
+    .custom-select-wrapper.open .custom-options { opacity: 1; visibility: visible; transform: translateY(0); }
+    .custom-option { padding: 3cqw 4cqw; font-size: 2.8cqw; letter-spacing: 0.12em; text-transform: uppercase; color: #888; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.2s, color 0.2s, padding-left 0.2s; }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option:hover, .custom-option.selected { background: #fafafa; color: #000; padding-left: 6cqw; }
+    .custom-option.selected { font-weight: 600; }
+
+    /* ========================================= */
+    /* СЕТКА И ЯЧЕЙКИ                            */
+    /* ========================================= */
+    .torus-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      width: 100cqw; aspect-ratio: 3 / 4; border-top: 1px solid #000; border-left: 1px solid #000;
+      margin-bottom: 3cqw; user-select: none;
+    }
+
+    .grid-cell {
+      position: relative; border-bottom: 1px solid #000; border-right: 1px solid #000;
+      background: #fff; cursor: pointer; transition: background-color 0.4s ease, filter 0.1s ease;
+      overflow: hidden;
+    }
+
+    @media (hover: hover) { .grid-cell:hover { filter: brightness(0.93); } }
+    .grid-cell:active, .grid-cell.tap-flash { filter: brightness(0.85); transition: filter 0.05s ease; }
+
+    /* ========================================= */
+    /* ВНУТРЕННИЕ ЭЛЕМЕНТЫ                       */
+    /* ========================================= */
+    .key-signature, .function-badge, .single-note, .enharmonic-cell .bottom-left, .enharmonic-cell .top-right {
+      position: absolute;
+      transition: color 0.15s ease-out, opacity 0.15s ease-out;
+      mix-blend-mode: multiply; pointer-events: none;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      line-height: 1; 
+    }
+
+    .key-signature { font-size: 3.8cqw; font-weight: 400; color: #777; z-index: 2; }
+    .key-signature.major-sig { top: 2cqw; left: 3cqw; }
+    .key-signature.minor-sig { bottom: 2cqw; right: 3cqw; }
+
+    .function-badge { font-weight: 400; color: #777; z-index: 2; }
+    .function-badge.major { top: 2cqw; right: 3cqw; font-size: 3.8cqw; }
+    .function-badge.minor { bottom: 2cqw; left: 3cqw; font-size: 3.8cqw; }
+
+    .single-note {
+      font-size: 13cqw; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+      color: #000; z-index: 1;
+    }
+
+    .enharmonic-cell { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+    
+    .enharmonic-cell .top-right { top: 16%; right: 18%; font-size: 7.5cqw; color: #000; }
+    .enharmonic-cell .bottom-left { bottom: 16%; left: 18%; font-size: 7.5cqw; color: #000; }
+
+    /* CSS УПРАВЛЕНИЕ СОСТОЯНИЯМИ */
+    .torus-grid.hide-signs .key-signature { opacity: 0; }
+
+    /* SWAP MODE: Нативный обмен */
+    .torus-grid.swap-mode .function-badge { color: #000; }
+    
+    .torus-grid.swap-mode .function-badge.major { top: 16%; right: 18%; font-size: 7.5cqw; }
+    .torus-grid.swap-mode .function-badge.minor { bottom: 16%; left: 18%; font-size: 7.5cqw; }
+    
+    .torus-grid.swap-mode .single-note { color: #777; font-size: 3.8cqw; }
+    .torus-grid.swap-mode .enharmonic-cell .top-right { top: 2cqw; right: 3cqw; color: #777; font-size: 3.8cqw; }
+    .torus-grid.swap-mode .enharmonic-cell .bottom-left { bottom: 2cqw; left: 3cqw; color: #777; font-size: 3.8cqw; }
+
+    /* ========================================= */
+    /* ПОДВАЛ И ЭКСПОРТ                          */
+    /* ========================================= */
+    .hint { font-size: 2.5cqw; letter-spacing: 0.15em; text-transform: uppercase; color: #999; text-align: center; margin-bottom: 4cqw; font-family: -apple-system, sans-serif;}
+    .export-container { display: flex; gap: 4cqw; width: 100%; justify-content: center; }
+    .btn-export { background: transparent; border: 1px solid #000; padding: 2.5cqw 5cqw; font-size: 2.6cqw; letter-spacing: 0.15em; text-transform: uppercase; font-family: -apple-system, sans-serif; cursor: pointer; transition: background 0.2s, color 0.2s; }
+    .btn-export:hover { background: #000; color: #fff; }
+    
+    footer { margin-top: 5cqw; }
+    .footer-mark { font-size: 2.2cqw; letter-spacing: 0.4em; color: #bcb; text-transform: uppercase; font-family: -apple-system, sans-serif; text-align: center; }
+  </style>
+</head>
+<body>
+  
+  <div class="app-wrapper">
+    <a href="/" class="back-link">← на главную</a>
+
+    <header>
+      <h1 class="brand-title">Матрица тональная</h1>
+      <p class="brand-subtitle">кварто-квинтовый квадрат</p>
+    </header>
+
+    <main>
+      <div class="controls-panel">
+        <label><input type="checkbox" id="toggle-signs" checked> Знаки</label>
+      </div>
+
+      <div class="mode-toggle-container">
+        <span class="mode-label active" id="lbl-notes" onclick="setSwapState(false)">Ноты</span>
+        <label class="toggle-pill" for="toggle-swap">
+          <input type="checkbox" id="toggle-swap" style="display: none;">
+          <div class="toggle-knob"></div>
+        </label>
+        <span class="mode-label" id="lbl-funcs" onclick="setSwapState(true)">Функции</span>
+      </div>
+
+      <div class="custom-select-wrapper" id="custom-select">
+        <div class="custom-select-trigger">
+          <span id="select-label">Чистая матрица</span>
+          <div class="arrow"></div>
+        </div>
+        <div class="custom-options">
+          <div class="custom-option selected" data-value="0">Чистая матрица</div>
+          <div class="custom-option" data-value="1">Шаг 1: Малая секунда (Хроматика)</div>
+          <div class="custom-option" data-value="2">Шаг 2: Большая секунда (Целотоника)</div>
+          <div class="custom-option" data-value="3">Шаг 3: Малая терция (Уменьшенные)</div>
+          <div class="custom-option" data-value="4">Шаг 4: Большая терция (Увеличенные)</div>
+          <div class="custom-option" data-value="5">Шаг 5: Чистая кварта</div>
+          <div class="custom-option" data-value="6">Шаг 6: Тритон</div>
+        </div>
+      </div>
+
+      <div class="torus-grid" id="matrix"></div>
+      <p class="hint">Нажмите на ячейку, чтобы сместить центр</p>
+
+      <div class="export-container">
+        <button class="btn-export" onclick="exportMatrix('png')">Экспорт PNG</button>
+        <button class="btn-export" onclick="exportMatrix('svg')">Экспорт SVG</button>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-mark">CHILINE</div>
+    </footer>
+  </div>
+
+  <script>
+    const selectWrapper = document.getElementById('custom-select');
+    const selectTrigger = selectWrapper.querySelector('.custom-select-trigger');
+    const selectLabel = document.getElementById('select-label');
+    const options = selectWrapper.querySelectorAll('.custom-option');
+    const matrixContainer = document.getElementById('matrix');
+
+    selectTrigger.addEventListener('click', () => selectWrapper.classList.toggle('open'));
+    document.addEventListener('click', (e) => { if (!selectWrapper.contains(e.target)) selectWrapper.classList.remove('open'); });
+
+    options.forEach(option => {
+      option.addEventListener('click', function() {
+        options.forEach(opt => opt.classList.remove('selected'));
+        this.classList.add('selected');
+        selectLabel.textContent = this.textContent;
+        selectWrapper.classList.remove('open');
+        activeStep = parseInt(this.getAttribute('data-value'));
+        updateGrid();
+      });
+    });
+
+    document.getElementById('toggle-signs').addEventListener('change', e => matrixContainer.classList.toggle('hide-signs', !e.target.checked));
+    
+    const toggleSwap = document.getElementById('toggle-swap');
+    const lblNotes = document.getElementById('lbl-notes');
+    const lblFuncs = document.getElementById('lbl-funcs');
+
+    function setSwapState(isSwap) {
+      toggleSwap.checked = isSwap;
+      toggleSwap.dispatchEvent(new Event('change'));
+    }
+
+    toggleSwap.addEventListener('change', (e) => {
+      const isSwap = e.target.checked;
+      matrixContainer.classList.toggle('swap-mode', isSwap);
+      lblNotes.classList.toggle('active', !isSwap);
+      lblFuncs.classList.toggle('active', isSwap);
+    });
+
+    const notesData = {
+      0: { type: 'single', label: 'C' }, 1: { type: 'dual', bot: 'c♯', top: 'D♭' },
+      2: { type: 'single', label: 'D' }, 3: { type: 'dual', bot: 'd♯', top: 'E♭' },
+      4: { type: 'single', label: 'E' }, 5: { type: 'single', label: 'F' },
+      6: { type: 'dual', bot: 'f♯', top: 'G♭' }, 7: { type: 'single', label: 'G' },
+      8: { type: 'dual', bot: 'g♯', top: 'A♭' }, 9: { type: 'single', label: 'A' },
+      10: { type: 'single', label: 'B' }, 11: { type: 'single', label: 'H' }
+    };
+    const keySignatures = {
+      0: { maj: '0', min: '3♭' }, 1: { maj: '5♭', min: '4♯' }, 2: { maj: '2♯', min: '1♭' },
+      3: { maj: '3♭', min: '6' }, 4: { maj: '4♯', min: '1♯' }, 5: { maj: '1♭', min: '4♭' },
+      6: { maj: '6', min: '3♯' }, 7: { maj: '1♯', min: '2♭' }, 8: { maj: '4♭', min: '5♯' },
+      9: { maj: '3♯', min: '0' }, 10: { maj: '2♭', min: '5♭' }, 11: { maj: '5♯', min: '2♯' }
+    };
+    const functionalMaps = {
+      classical: [ ['st', 'tt', 'dt'], ['S', 'T', 'D'], ['s', 't', 'd'], ['St', 'Tt', 'Dt'] ],
+      relative: [ ['Sg', 'Tg', 'Dg'], ['sg', 'tg', 'dg'], ['SG', 'TG', 'DG'], ['sG', 'tG', 'dG'] ]
+    };
+
+    let currentCenter = 0; 
+    let activeStep = 0;
+    const gridCells = []; 
+
+    function initGrid() {
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 3; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'grid-cell';
+          
+          const ui = {
+            sigMaj: document.createElement('span'),
+            sigMin: document.createElement('span'),
+            funcMaj: document.createElement('span'),
+            funcMin: document.createElement('span'),
+            single: document.createElement('span'),
+            enh: document.createElement('div'),
+            enhTop: document.createElement('span'),
+            enhBot: document.createElement('span')
+          };
+
+          ui.sigMaj.className = 'key-signature major-sig';
+          ui.sigMin.className = 'key-signature minor-sig';
+          ui.funcMaj.className = 'function-badge major';
+          ui.funcMin.className = 'function-badge minor';
+          ui.single.className = 'single-note';
+          ui.enh.className = 'enharmonic-cell';
+          ui.enhTop.className = 'top-right';
+          ui.enhBot.className = 'bottom-left';
+
+          ui.enh.appendChild(ui.enhBot);
+          ui.enh.appendChild(ui.enhTop);
+
+          cell.appendChild(ui.sigMaj);
+          cell.appendChild(ui.sigMin);
+          cell.appendChild(ui.funcMaj);
+          cell.appendChild(ui.funcMin);
+          cell.appendChild(ui.single);
+          cell.appendChild(ui.enh);
+
+          cell.addEventListener('click', () => {
+            cell.classList.add('tap-flash');
+            setTimeout(() => cell.classList.remove('tap-flash'), 100);
+            
+            currentCenter = parseInt(cell.dataset.val);
+            updateGrid();
+          });
+
+          gridCells.push({ r, c, cell, ui });
+          matrixContainer.appendChild(cell);
+        }
+      }
+    }
+
+    function updateGrid() {
+      gridCells.forEach(item => {
+        const dR = item.r - 1; const dC = item.c - 1;
+        let val = (currentCenter - (3 * dR) + (7 * dC)) % 12;
+        if (val < 0) val += 12;
+        
+        let statVal = (- (3 * dR) + (7 * dC)) % 12;
+        if (statVal < 0) statVal += 12;
+
+        item.cell.dataset.val = val;
+
+        let bg = '#ffffff';
+        if (activeStep === 1) bg = `hsl(${statVal * 30}, 28%, 91%)`;
+        else if (activeStep === 5) bg = `hsl(${((statVal * 7) % 12) * 30}, 34%, 89%)`;
+        else if (activeStep > 0) bg = `hsl(${(statVal % activeStep) * (360 / activeStep)}, 24%, 91%)`;
+        item.cell.style.backgroundColor = bg;
+
+        item.ui.sigMaj.textContent = keySignatures[val].maj;
+        item.ui.sigMin.textContent = keySignatures[val].min;
+
+        const classF = functionalMaps.classical[item.r][item.c];
+        const relF = functionalMaps.relative[item.r][item.c];
+        if (classF[0] === classF[0].toUpperCase()) {
+          item.ui.funcMaj.textContent = classF;
+          item.ui.funcMin.textContent = relF;
+        } else {
+          item.ui.funcMaj.textContent = relF;
+          item.ui.funcMin.textContent = classF;
+        }
+
+        const note = notesData[val];
+        if (note.type === 'single') {
+          item.ui.single.textContent = note.label;
+          item.ui.enhTop.textContent = '';
+          item.ui.enhBot.textContent = '';
+        } else {
+          item.ui.single.textContent = '';
+          item.ui.enhTop.textContent = note.top;
+          item.ui.enhBot.textContent = note.bot;
+        }
+      });
+    }
+
+    function exportMatrix(format) {
+      const svgW = 450; const svgH = 600;
+      const cW = svgW / 3; const cH = svgH / 4;
+      
+      const showS = document.getElementById('toggle-signs').checked;
+      const isSwap = document.getElementById('toggle-swap').checked;
+
+      let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}">
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Old+Standard+TT:wght@400;700&amp;display=swap');
+          text { font-family: 'Old Standard TT', serif; dominant-baseline: middle; mix-blend-mode: multiply; }
+          .sig { font-size: 16px; fill: #777; font-family: -apple-system, sans-serif; }
+          .func-m { font-size: ${isSwap ? '28.8px' : '16px'}; fill: ${isSwap ? '#000' : '#777'}; }
+          .single { font-size: ${isSwap ? '16px' : '35.2px'}; fill: ${isSwap ? '#777' : '#000'}; }
+          .enh { font-size: ${isSwap ? '16px' : '28.8px'}; fill: ${isSwap ? '#777' : '#000'}; }
+        </style>`;
+
+      gridCells.forEach(item => {
+        const x = item.c * cW; const y = item.r * cH;
+        svg += `<rect x="${x}" y="${y}" width="${cW}" height="${cH}" fill="${item.cell.style.backgroundColor}" stroke="#000" stroke-width="1" />`;
+
+        if (showS) {
+          svg += `<text x="${x + 12}" y="${y + 16}" class="sig" text-anchor="start">${item.ui.sigMaj.textContent}</text>`;
+          svg += `<text x="${x + cW - 12}" y="${y + cH - 12}" class="sig" text-anchor="end">${item.ui.sigMin.textContent}</text>`;
+        }
+
+        const fMx = isSwap ? x + cW * 0.82 : x + cW - 12;
+        const fMy = isSwap ? y + cH * 0.25 : y + 18;
+        svg += `<text x="${fMx}" y="${fMy}" class="func-m" text-anchor="${isSwap ? 'end' : 'end'}">${item.ui.funcMaj.textContent}</text>`;
+        
+        const fmx = isSwap ? x + cW * 0.18 : x + 12;
+        const fmy = isSwap ? y + cH * 0.75 : y + cH - 16;
+        svg += `<text x="${fmx}" y="${fmy}" class="func-m" text-anchor="${isSwap ? 'start' : 'start'}">${item.ui.funcMin.textContent}</text>`;
+
+        if (item.ui.single.textContent) {
+          svg += `<text x="${x + cW/2}" y="${y + cH/2 + 2}" class="single" text-anchor="middle">${item.ui.single.textContent}</text>`;
+        } else {
+          const eTx = isSwap ? x + cW - 12 : x + cW * 0.82;
+          const eTy = isSwap ? y + 18 : y + cH * 0.25;
+          svg += `<text x="${eTx}" y="${eTy}" class="enh" text-anchor="${isSwap ? 'end' : 'end'}">${item.ui.enhTop.textContent}</text>`;
+
+          const eBx = isSwap ? x + 12 : x + cW * 0.18;
+          const eBy = isSwap ? y + cH - 16 : y + cH * 0.75;
+          svg += `<text x="${eBx}" y="${eBy}" class="enh" text-anchor="${isSwap ? 'start' : 'start'}">${item.ui.enhBot.textContent}</text>`;
+        }
+      });
+      
+      svg += '</svg>';
+      const blob = new Blob([svg], {type: 'image/svg+xml;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      
+      if (format === 'svg') {
+        const a = document.createElement('a'); a.href = url; a.download = `torus-matrix-step${activeStep}.svg`;
+        a.click(); URL.revokeObjectURL(url);
+      } else {
+        const img = new Image();
+        img.onload = () => {
+          const cvs = document.createElement('canvas'); cvs.width = svgW*2; cvs.height = svgH*2;
+          const ctx = cvs.getContext('2d'); ctx.scale(2, 2); ctx.drawImage(img, 0, 0);
+          const a = document.createElement('a'); a.href = cvs.toDataURL('image/png'); a.download = `torus-matrix-step${activeStep}.png`;
+          a.click(); URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      }
+    }
+
+    initGrid();
+    updateGrid();
+  </script>
+  <script src="/src/components/Fab/social-fab.js"></script>
+</body>
+</html>
