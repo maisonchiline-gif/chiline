@@ -29,8 +29,8 @@ function parseCSV(str) {
     return arr;
 }
 
-const ERA_COLORS = { "Средневековье": "#5d4037", "Возрождение": "#d84315", "барокко": "#f9a825", "классицизм": "#2e7d32", "ранний романтизм": "#00838f", "романтизм": "#1565c0", "поздний романтизм": "#6a1b9a", "XX век": "#c62828", "авангард": "#4527a0", "Другое": "#555555" };
-const COUNTRY_COLORS = { "австро-немецкий": "#1f77b4", "французский": "#ff7f0e", "итальянский": "#2ca02c", "русский": "#d62728", "английский": "#9467bd", "польский": "#8c564b", "американский": "#e377c2", "чешский": "#7f7f7f", "испанский": "#bcbd22", "венгерский": "#17becf", "финский": "#0d47a1", "норвежский": "#006064", "Другое": "#666666" };
+const ERA_COLORS = { "Средневековье": "#5d4037", "Возрождение": "#d84315", "барокко": "#f9a825", "классицизм": "#2e7d32", "ранний романтизм": "#00838f", "зрелый романтизм": "#1565c0", "поздний романтизм": "#2b1ea5", "XX век": "#4527a0", "авангард": "#c62828"};
+const COUNTRY_COLORS = { "Германия": "#b17719", "Австрия": "#f9a825", "франция": "#1565c0", "италия": "#d84315", "россия": "#2e7d32", "великобритания": "#9467bd", "Польша": "#8c564b", "США": "#e377c2", "чехия": "#7f7f7f", "испания": "#bcbd22", "венгрия": "#7f7f7f", "финляндия": "#7f7f7f", "норвегия": "#7f7f7f", "Другое": "#7f7f7f" };
 
 function returnToComposers() {
     State.currentFactIndex = -1;
@@ -63,20 +63,83 @@ function parseSafeYear(val) {
 const State = {
     rawItems: [], filteredItems: [], domCache: {},
     config: { trackHeight: 28, trackMargin: 4, basePixelsPerYear: 1, globalPixelsPerYear: 1, globalMinYear: 0, trueMinYear: -60000, trueMaxYear: 2200, composersMinYear: 0, composersMaxYear: 0, canvasHeight: 0, totalWidth: 0, equatorY: 0 },
-    filters: { widthFactor: 0.5, layoutMode: 'compact', eras: [], countries: [], minLifespan: 0, maxLifespan: 120, sortBy: 'birth', colorMode: 'era' },
-    currentFactIndex: -1, updateFactNavUI: null 
+    filters: { widthFactor: 0.5, layoutMode: 'compact', eras: [], countries: [], minLifespan: 0, maxLifespan: 120, minWorks: 0, maxWorks: 1400, sortBy: 'birth', colorMode: 'era' },    currentFactIndex: -1, updateFactNavUI: null 
 };
 
 // --- КАМЕРА ---
 const Camera = {
     scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, initX: 0, initY: 0, renderPending: false, animFrame: null,
-    MIN_ZOOM: 0.05, MAX_ZOOM: 5.0,  
+    MIN_ZOOM: 0.05, MAX_ZOOM: 5.0, defX: 0, defY: 0, defScale: 1,
     init() {
         const vp = document.getElementById('viewport');
         vp.addEventListener('mousedown', e => { this.stopAnim(); this.isDragging = true; this.startX = e.clientX; this.startY = e.clientY; this.initX = this.x; this.initY = this.y; this.exitFactModeManual(); });
         window.addEventListener('mousemove', e => { if (this.isDragging) { this.x = this.initX + (e.clientX - this.startX); this.y = this.initY + (e.clientY - this.startY); this.clamp(); this.requestUpdate(); }});
         window.addEventListener('mouseup', () => this.isDragging = false);
         window.addEventListener('mouseleave', () => this.isDragging = false);
+        
+        // --- ДОБАВИТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (Инерция) ---
+let velX = 0, velY = 0, lastTime = 0, lastX = 0, lastY = 0;
+
+vp.addEventListener('touchstart', e => {
+    this.stopAnim();
+    this.isDragging = true;
+    this.startX = e.touches[0].clientX;
+    this.startY = e.touches[0].clientY;
+    this.initX = this.x;
+    this.initY = this.y;
+    velX = 0; velY = 0;
+    lastX = this.startX; lastY = this.startY; 
+    lastTime = performance.now();
+    this.exitFactModeManual();
+}, { passive: false });
+
+vp.addEventListener('touchmove', e => {
+    if (!this.isDragging) return;
+    e.preventDefault(); // Блокируем стандартный скролл страницы
+    const cx = e.touches[0].clientX;
+    const cy = e.touches[0].clientY;
+    this.x = this.initX + (cx - this.startX);
+    this.y = this.initY + (cy - this.startY);
+
+    // Расчет скорости для инерции
+    const now = performance.now();
+    const dt = now - lastTime;
+    if (dt > 0) {
+        velX = (cx - lastX) / dt;
+        velY = (cy - lastY) / dt;
+    }
+    lastX = cx; lastY = cy; lastTime = now;
+
+    this.clamp();
+    this.requestUpdate();
+}, { passive: false });
+
+vp.addEventListener('touchend', () => {
+    this.isDragging = false;
+    
+    // 1) ЖЕСТКИЙ ЛИМИТ СКОРОСТИ (защита от случайных сильных рывков)
+    const maxVel = 1.0; // Максимальная сила броска (чем меньше, тем тяжелее холст)
+    velX = Math.max(-maxVel, Math.min(maxVel, velX));
+    velY = Math.max(-maxVel, Math.min(maxVel, velY));
+
+    // 2) УСИЛЕННОЕ ТОРМОЖЕНИЕ
+    const friction = 0.80; // Было 0.95. При 0.80 холст останавливается мягко, но быстро
+    
+    const step = () => {
+        // Порог полной остановки немного увеличен, чтобы избежать "микро-дрожания" в конце
+        if (Math.abs(velX) > 0.1 || Math.abs(velY) > 0.1) {
+            this.x += velX * 16; // 16ms — примерный шаг кадра при 60 FPS
+            this.y += velY * 16;
+            velX *= friction;
+            velY *= friction;
+            this.clamp();
+            this.requestUpdate();
+            this.animFrame = requestAnimationFrame(step);
+        }
+    };
+    this.animFrame = requestAnimationFrame(step);
+});
+        
         vp.addEventListener('wheel', e => {
             e.preventDefault(); this.stopAnim(); this.exitFactModeManual();
             const zoomFactor = Math.exp((e.deltaY < 0 ? 1 : -1) * 0.001 * Math.abs(e.deltaY));
@@ -118,6 +181,10 @@ const Camera = {
         const w = (2200 - c.globalMinYear) * c.globalPixelsPerYear - minCanvasX;
         let targetScale = Math.max(this.MIN_ZOOM, Math.min((vpW * 0.9) / w, (vpH * 0.8) / c.canvasHeight) || 1);
         const targetX = (vpW - w * targetScale) / 2 - (minCanvasX * targetScale), targetY = (vpH - c.canvasHeight * targetScale) / 2;
+        
+        // Запоминаем дефолтную позицию
+        this.defX = targetX; this.defY = targetY; this.defScale = targetScale;
+        
         if (animate) this.flyToTarget(targetX, targetY, targetScale, 1500);
         else { this.x = targetX; this.y = targetY; this.scale = targetScale; this.clamp(); this.update(); }
     },
@@ -137,9 +204,14 @@ const Camera = {
         document.getElementById('canvas').style.transform = `translate(${this.x}px, ${this.y}px) scale(${this.scale})`;
         const vp = document.getElementById('viewport');
         vp.style.setProperty('--inv-scale', 1 / this.scale);
-        vp.style.setProperty('--text-y', `${(30 - this.y) / this.scale}px`);
+        vp.style.setProperty('--text-y', `${(75 - this.y) / this.scale}px`);
         const ppy = State.config.globalPixelsPerYear * this.scale;
         vp.setAttribute('data-zoom', ppy > 1.5 ? 50 : ppy > 0.8 ? 100 : ppy > 0.15 ? 500 : ppy > 0.06 ? 1000 : ppy > 0.012 ? 5000 : 10000);
+        
+        // Включаем акцентный цвет кнопки, если камера сместилась
+        const isMoved = Math.abs(this.x - this.defX) > 10 || Math.abs(this.y - this.defY) > 10 || Math.abs(this.scale - this.defScale) > 0.05;
+        const btnJump = document.getElementById('btn-jump-composers');
+        if (btnJump) btnJump.classList.toggle('camera-moved', isMoved);
     }
 };
 
@@ -164,7 +236,8 @@ const Engine = {
         State.filteredItems = State.rawItems.filter(i => 
             i.era.split(',').some(e => f.eras.includes(e.trim())) && 
             i.country.split(',').some(c => f.countries.includes(c.trim())) && 
-            i.lifespan >= f.minLifespan && i.lifespan <= f.maxLifespan
+            i.lifespan >= f.minLifespan && i.lifespan <= f.maxLifespan &&
+            i.works >= f.minWorks && i.works <= f.maxWorks // <-- НОВАЯ СТРОКА
         );
         State.filteredItems.sort((a, b) => f.sortBy === 'country' ? (a.country.localeCompare(b.country) || a.birth - b.birth) : a[f.sortBy] - b[f.sortBy]);
         document.getElementById('total-count').innerText = State.filteredItems.length;
@@ -230,23 +303,53 @@ const Renderer = {
         if (index !== -1) document.querySelector(`.fact-marker[data-index="${index}"]`)?.classList.add('active-fact');
     },
     drawBackgroundEras() {
-        const eraStats = {}, c = State.config, h = Math.max(c.canvasHeight, 1000);
+        // === НАСТРОЙКИ ПЛАВНОСТИ ГРАДИЕНТА (в процентах от ширины всего графа) ===
+        // 0 — абсолютно резкая граница. Чем больше цифра, тем длиннее и плавнее шлейф.
+        const FADE_START = 0.1; // Насколько плавно появляется цвет перед первым композитором
+        const FADE_END = 0.0;   // Насколько плавно цвет уходит во тьму после последнего
+        // =========================================================================
+
+        const eraStats = {}, c = State.config, h = Math.max(c.canvasHeight, 300);
         State.rawItems.forEach(i => { if (!eraStats[i.era]) eraStats[i.era] = { min: 9999, max: -9999 }; eraStats[i.era].min = Math.min(eraStats[i.era].min, i.birth); eraStats[i.era].max = Math.max(eraStats[i.era].max, i.death); });
         const erasArr = Object.keys(eraStats).map(e => ({ era: e, center: (eraStats[e].min + eraStats[e].max) / 2 })).sort((a, b) => a.center - b.center);
-        let html = '', stops = [];
+        
+        // Вычисляем проценты для первого и последнего композитора
+        const minPct = ((c.composersMinYear - c.trueMinYear) / (c.trueMaxYear - c.trueMinYear)) * 100;
+        const maxPct = ((c.composersMaxYear - c.trueMinYear) / (c.trueMaxYear - c.trueMinYear)) * 100;
+
+        // Определяем цвета самых крайних эпох
+        const firstColor = `color-mix(in srgb, ${getColor('era', erasArr[0].era)} 12%, transparent)`;
+        const lastColor = `color-mix(in srgb, ${getColor('era', erasArr[erasArr.length - 1].era)} 12%, transparent)`;
+
+        // Формируем градиент слева (от черного к первому цвету)
+        let stops = [
+            `var(--c-bg) 0%`, 
+            `var(--c-bg) ${Math.max(0, minPct - FADE_START)}%`, 
+            `${firstColor} ${minPct}%`
+        ];
+        
+        let html = '';
         erasArr.forEach(e => {
             const pct = ((e.center - c.trueMinYear) / (c.trueMaxYear - c.trueMinYear)) * 100;
             stops.push(`color-mix(in srgb, ${getColor('era', e.era)} 12%, transparent) ${pct}%`);
             html += `<div class="era-background" style="width:0; left:${(e.center - c.globalMinYear) * c.globalPixelsPerYear}px; top:0; height:${h}px;"><div class="era-label">${e.era}</div></div>`;
         });
+        
+        // Формируем градиент справа (от последнего цвета уходим в черный)
+        stops.push(
+            `${lastColor} ${maxPct}%`,
+            `var(--c-bg) ${Math.min(100, maxPct + FADE_END)}%`, 
+            `var(--c-bg) 100%`
+        );
+
         this.layers.bg.innerHTML = html;
-        this.layers.bg.style.cssText = `position:absolute; top:0; height:${h}px; left:${(c.trueMinYear - c.globalMinYear) * c.globalPixelsPerYear}px; width:${c.totalWidth}px; ${stops.length > 1 ? `background:linear-gradient(to right, ${stops.join(', ')})` : ''}`;
+        this.layers.bg.style.cssText = `position:absolute; top:0; height:${h}px; left:${(c.trueMinYear - c.globalMinYear) * c.globalPixelsPerYear}px; width:${c.totalWidth}px; background:linear-gradient(to right, ${stops.join(', ')})`;
     },
     drawGrid() {
         if (!State.rawItems.length) return;
         
         // Берем максимальную высоту, чтобы линия не обрывалась, если композиторов мало
-        const c = State.config, STEP = 50, h = Math.max(c.canvasHeight, 1000);
+        const c = State.config, STEP = 50, h = Math.max(c.canvasHeight, 300);
         const startC = Math.floor(c.trueMinYear / STEP) * STEP, endC = Math.ceil(c.trueMaxYear / STEP) * STEP;
         let htmlStr = '';
         
@@ -257,7 +360,10 @@ const Renderer = {
         }
         
         // 2. Линия экватора (для компактного вида)
-        htmlStr += `<div class="equator-line" style="width:${c.totalWidth}px; left:${(c.trueMinYear - c.globalMinYear) * c.globalPixelsPerYear}px; top:${c.equatorY}px; display:${State.filters.layoutMode === 'compact' ? 'block' : 'none'};"></div>`;
+        // Рассчитываем ширину линии от начала времен до текущего года
+        const equatorWidth = (CURRENT_YEAR - c.trueMinYear) * c.globalPixelsPerYear;
+        
+        htmlStr += `<div class="equator-line" style="width:${equatorWidth}px; left:${(c.trueMinYear - c.globalMinYear) * c.globalPixelsPerYear}px; top:${c.equatorY}px; display:${State.filters.layoutMode === 'compact' ? 'block' : 'none'};"></div>`;
         
         // 3. КРАСНАЯ ЛИНИЯ НАШЕГО ВРЕМЕНИ
         const currentYearPos = (CURRENT_YEAR - c.globalMinYear) * c.globalPixelsPerYear;
@@ -290,10 +396,10 @@ const Renderer = {
         Object.keys(State.domCache).forEach(id => { if (!activeIds.has(id)) State.domCache[id].classList.add('hidden'); });
     },
     showComposerTooltip(item) {
-        this.tooltip.innerHTML = `<div class="tooltip-title">${item.name}</div>${item.engName ? `<div style="color:#aaa; font-size:12px; margin-bottom:5px;">${item.engName}</div>` : ''}<b>Годы:</b> ${item.birth} — ${item.death === CURRENT_YEAR ? 'Наши дни' : item.death}<br><b>Прожил:</b> ${item.lifespan} лет<br><b>Эпоха:</b> ${item.era}<br><b>Страна:</b> ${item.country}`;
+        this.tooltip.innerHTML = `<div class="tooltip-title">${item.name}</div>${item.engName ? `<div style="color:#aaa; font-size:12px; margin-bottom:5px;">${item.engName}</div>` : ''}<b>Годы:</b> ${item.birth} — ${item.death === CURRENT_YEAR ? 'Наши дни' : item.death}<br><b>Прожил:</b> ${item.lifespan} лет<br><b>Эпоха:</b> ${item.era}<br><b>Страна:</b> ${item.country}<br><b>Произведений:</b> ~${item.works}`; // <-- ИЗМЕНЕННАЯ СТРОКА
         this.tooltip.style.visibility = 'visible'; this.tooltip.style.opacity = '1';
         Object.values(State.domCache).forEach(el => { if (!el.classList.contains('hidden')) { const t = State.filteredItems.find(i => i.id === el.dataset.id); if (t && !(t.birth <= item.death && t.death >= item.birth)) el.classList.add('dimmed'); }});
-    },
+    },      
     showFactTooltip(fact) {
         this.tooltip.innerHTML = `<div class="tooltip-title" style="color:#e91e63;">${fact.year < 0 ? Math.abs(fact.year) + ' год до н.э.' : fact.year + ' год'}</div><b>${fact.title}</b><br><div style="margin-top:5px; color:#ccc;">${fact.text}</div>`;
         this.tooltip.style.visibility = 'visible'; this.tooltip.style.opacity = '1';
@@ -350,7 +456,9 @@ function setupFactsNavigation() {
     
     btnPrev.addEventListener('click', () => activateFact(State.currentFactIndex === -1 ? HISTORICAL_FACTS.length - 1 : Math.max(0, State.currentFactIndex - 1)));
     btnNext.addEventListener('click', () => { if (State.currentFactIndex !== -1) activateFact(State.currentFactIndex === HISTORICAL_FACTS.length - 1 ? -1 : State.currentFactIndex + 1); });
-    
+    document.getElementById('btn-close-fact').addEventListener('click', () => {
+    document.getElementById('fact-card').classList.remove('visible');
+});
     State.updateFactNavUI();
 }
 
@@ -364,80 +472,311 @@ function setupControls() {
     layoutSel.addEventListener('change', e => { State.filters.layoutMode = e.target.value; updateLocks(); Engine.calculateLayout(); });
     sortSel.addEventListener('change', e => { State.filters.sortBy = e.target.value; updateLocks(); Engine.applyFiltersAndSort(); });
     bindSelect('ctrl-color', 'colorMode');
+    
     const bindCbGroup = (id, key) => {
-            const container = document.getElementById(id);
-            container.addEventListener('change', e => {
-                if (e.target.type !== 'checkbox') return;
-                
-                const tgt = e.target;
-                
-                // ЛОГИКА: Если кликнули на Мастер-чекбокс (Категорию)
-                if (tgt.classList.contains('group-master')) {
-                    container.querySelectorAll(`.group-child[data-parent="${tgt.dataset.group}"]`).forEach(cb => cb.checked = tgt.checked);
-                } 
-                // ЛОГИКА: Если кликнули на Подкатегорию
-                else if (tgt.classList.contains('group-child')) {
-                    const master = container.querySelector(`.group-master[data-group="${tgt.dataset.parent}"]`);
-                    if (master) {
-                        const children = container.querySelectorAll(`.group-child[data-parent="${tgt.dataset.parent}"]`);
-                        master.checked = Array.from(children).every(c => c.checked);
-                        master.indeterminate = !master.checked && Array.from(children).some(c => c.checked);
-                    }
-                }
-                
-                // Считываем значения только реальных чекбоксов (исключая мастер-группы)
-                State.filters[key] = Array.from(container.querySelectorAll('input[type="checkbox"]:checked:not(.group-master)')).map(cb => cb.value);
-                Engine.applyFiltersAndSort();
-            });
-        };
-
-        bindCbGroup('ctrl-era', 'eras'); 
-        bindCbGroup('ctrl-country', 'countries');
-    bindCbGroup('ctrl-era', 'eras'); bindCbGroup('ctrl-country', 'countries');
-
-    document.querySelectorAll('.toggle-all').forEach(btn => {
-            btn.addEventListener('click', e => {
-                e.preventDefault(); 
-                const c = document.getElementById(e.target.dataset.target);
-                const cbs = c.querySelectorAll('input[type="checkbox"]');
-                const allChecked = Array.from(cbs).every(cb => cb.checked);
-                
-                cbs.forEach(cb => {
-                    cb.checked = !allChecked;
-                    cb.indeterminate = false; // Сбрасываем промежуточное состояние
-                });
-                
-                State.filters[e.target.dataset.target === 'ctrl-era' ? 'eras' : 'countries'] = Array.from(c.querySelectorAll('input[type="checkbox"]:checked:not(.group-master)')).map(cb => cb.value);
-                Engine.applyFiltersAndSort();
-            });
-        });
-
-    document.getElementById('ctrl-width').addEventListener('input', e => { State.filters.widthFactor = parseFloat(e.target.value); Engine.updateWidth(); });
-    const updateLife = e => { let min = parseInt(document.getElementById('ctrl-min-life').value), max = parseInt(document.getElementById('ctrl-max-life').value); if (e.target.id === 'ctrl-min-life' && min > max) document.getElementById('ctrl-min-life').value = min = max; if (e.target.id === 'ctrl-max-life' && max < min) document.getElementById('ctrl-max-life').value = max = min; document.getElementById('val-min-life').innerText = min; document.getElementById('val-max-life').innerText = max; State.filters.minLifespan = min; State.filters.maxLifespan = max; Engine.applyFiltersAndSort(); };
-    document.getElementById('ctrl-min-life').addEventListener('input', updateLife); document.getElementById('ctrl-max-life').addEventListener('input', updateLife);
-    document.getElementById('btn-show-menu').addEventListener('click', () => { document.getElementById('ui-layer').classList.remove('ui-hidden'); document.getElementById('btn-show-menu').style.display = 'none'; });
-    // Открытие меню (эта логика у тебя уже есть)
-        document.getElementById('btn-show-menu').addEventListener('click', () => { 
-            document.getElementById('ui-layer').classList.remove('ui-hidden'); 
-            document.getElementById('btn-show-menu').style.display = 'none'; 
-        });
-
-        // ЗАКРЫТИЕ МЕНЮ (НОВАЯ ЛОГИКА)
-        document.getElementById('btn-close-menu').addEventListener('click', () => {
-            document.getElementById('ui-layer').classList.add('ui-hidden');
-            document.getElementById('btn-show-menu').style.display = 'block';
-        });
-    // Логика сворачивания/разворачивания подкатегорий
-        document.getElementById('ui-layer').addEventListener('click', e => {
-            if (e.target.classList.contains('collapse-toggle')) {
-                e.preventDefault(); // Блокируем клик, чтобы не переключался чекбокс
-                const targetDiv = document.getElementById(e.target.dataset.target);
-                if (targetDiv) {
-                    targetDiv.classList.toggle('collapsed-group');
-                    e.target.innerText = targetDiv.classList.contains('collapsed-group') ? '▶' : '▼';
+        const container = document.getElementById(id);
+        if (!container) return; // Защита от ошибок, если элемент не найден
+        container.addEventListener('change', e => {
+            if (e.target.type !== 'checkbox') return;
+            
+            const tgt = e.target;
+            
+            // ЛОГИКА: Если кликнули на Мастер-чекбокс (Категорию)
+            if (tgt.classList.contains('group-master')) {
+                container.querySelectorAll(`.group-child[data-parent="${tgt.dataset.group}"]`).forEach(cb => cb.checked = tgt.checked);
+            } 
+            // ЛОГИКА: Если кликнули на Подкатегорию
+            else if (tgt.classList.contains('group-child')) {
+                const master = container.querySelector(`.group-master[data-group="${tgt.dataset.parent}"]`);
+                if (master) {
+                    const children = container.querySelectorAll(`.group-child[data-parent="${tgt.dataset.parent}"]`);
+                    master.checked = Array.from(children).every(c => c.checked);
+                    master.indeterminate = !master.checked && Array.from(children).some(c => c.checked);
                 }
             }
+            
+            // Считываем значения только реальных чекбоксов (исключая мастер-группы)
+            State.filters[key] = Array.from(container.querySelectorAll('input[type="checkbox"]:checked:not(.group-master)')).map(cb => cb.value);
+            Engine.applyFiltersAndSort();
         });
+    };
+
+    bindCbGroup('ctrl-era', 'eras'); 
+    bindCbGroup('ctrl-country', 'countries');
+
+    document.querySelectorAll('.toggle-all').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.preventDefault(); 
+            const c = document.getElementById(e.target.dataset.target);
+            if (!c) return;
+            const cbs = c.querySelectorAll('input[type="checkbox"]');
+            const allChecked = Array.from(cbs).every(cb => cb.checked);
+            
+            cbs.forEach(cb => {
+                cb.checked = !allChecked;
+                cb.indeterminate = false; // Сбрасываем промежуточное состояние
+            });
+            
+            State.filters[e.target.dataset.target === 'ctrl-era' ? 'eras' : 'countries'] = Array.from(c.querySelectorAll('input[type="checkbox"]:checked:not(.group-master)')).map(cb => cb.value);
+            Engine.applyFiltersAndSort();
+        });
+    });
+
+    document.getElementById('ctrl-width').addEventListener('input', e => { State.filters.widthFactor = parseFloat(e.target.value); Engine.updateWidth(); });
+    
+    // --- ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: Закраска через градиент (надежно и без багов) ---
+    const updateSliderUI = (minId, maxId, trackId, e) => {
+        const minEl = document.getElementById(minId);
+        const maxEl = document.getElementById(maxId);
+        const track = document.getElementById(trackId);
+        
+        if (!minEl || !maxEl || !track) return;
+
+        const min = parseFloat(minEl.min), max = parseFloat(minEl.max);
+        const minVal = parseFloat(minEl.value), maxVal = parseFloat(maxEl.value);
+        
+        const percentMin = ((minVal - min) / (max - min)) * 100;
+        const percentMax = ((maxVal - min) / (max - min)) * 100;
+        
+        // Рисуем красную линию прямо фоном трека (от percentMin до percentMax)
+        track.style.background = `linear-gradient(to right, 
+            color-mix(in srgb, var(--c-txt) 20%, transparent) ${percentMin}%, 
+            var(--c-accent) ${percentMin}%, 
+            var(--c-accent) ${percentMax}%, 
+            color-mix(in srgb, var(--c-txt) 20%, transparent) ${percentMax}%)`;
+
+        if (e) {
+            const isMin = e.target.id === minId;
+            e.target.style.zIndex = 5;
+            document.getElementById(isMin ? maxId : minId).style.zIndex = 4;
+        }
+    };
+
+    // --- ОБРАБОТКА ПОЛЗУНКОВ ВОЗРАСТА ---
+    const updateLife = e => { 
+        let min = parseInt(document.getElementById('ctrl-min-life').value);
+        let max = parseInt(document.getElementById('ctrl-max-life').value); 
+        if (e && e.target.id === 'ctrl-min-life' && min > max) document.getElementById('ctrl-min-life').value = min = max; 
+        if (e && e.target.id === 'ctrl-max-life' && max < min) document.getElementById('ctrl-max-life').value = max = min; 
+        
+        document.getElementById('val-min-life').innerText = min; 
+        document.getElementById('val-max-life').innerText = max; 
+        
+        updateSliderUI('ctrl-min-life', 'ctrl-max-life', 'track-life', e);
+        
+        State.filters.minLifespan = min; 
+        State.filters.maxLifespan = max; 
+        Engine.applyFiltersAndSort(); 
+    };
+    
+    document.getElementById('ctrl-min-life').addEventListener('input', updateLife); 
+    document.getElementById('ctrl-max-life').addEventListener('input', updateLife);
+
+    // --- ОБРАБОТКА ПОЛЗУНКОВ ПРОИЗВЕДЕНИЙ ---
+    const updateWorks = e => { 
+        let min = parseInt(document.getElementById('ctrl-min-works').value);
+        let max = parseInt(document.getElementById('ctrl-max-works').value); 
+        if (e && e.target.id === 'ctrl-min-works' && min > max) document.getElementById('ctrl-min-works').value = min = max; 
+        if (e && e.target.id === 'ctrl-max-works' && max < min) document.getElementById('ctrl-max-works').value = max = min; 
+        
+        document.getElementById('val-min-works').innerText = min; 
+        document.getElementById('val-max-works').innerText = max >= 1400 ? '1400+' : max; 
+        
+        updateSliderUI('ctrl-min-works', 'ctrl-max-works', 'track-works', e);
+        
+        State.filters.minWorks = min; 
+        State.filters.maxWorks = max; 
+        Engine.applyFiltersAndSort(); 
+    };
+
+    document.getElementById('ctrl-min-works').addEventListener('input', updateWorks); 
+    document.getElementById('ctrl-max-works').addEventListener('input', updateWorks);
+
+    // Отрисовка линий при старте
+    updateSliderUI('ctrl-min-life', 'ctrl-max-life', 'track-life', null);
+    updateSliderUI('ctrl-min-works', 'ctrl-max-works', 'track-works', null);
+
+    // --- ИНИЦИАЛИЗАЦИЯ (Вызываем при старте для отрисовки графики) ---
+    updateSliderUI('ctrl-min-life', 'ctrl-max-life', 'fill-life', null);
+    updateSliderUI('ctrl-min-works', 'ctrl-max-works', 'fill-works', null);
+    // --- ЛОГИКА СВОРАЧИВАНИЯ/РАЗВОРАЧИВАНИЯ ПОДКАТЕГОРИЙ ---
+    document.addEventListener('click', e => {
+        if (e.target.classList.contains('collapse-toggle')) {
+            e.preventDefault();
+            const targetDiv = document.getElementById(e.target.dataset.target);
+            if (targetDiv) {
+                targetDiv.classList.toggle('collapsed-group');
+                e.target.innerText = targetDiv.classList.contains('collapsed-group') ? '▶' : '▼';
+            }
+        }
+    });
+
+    // --- ЛОГИКА ВЕРХНЕГО МЕНЮ И ВЫПАДАЮЩИХ ПАНЕЛЕЙ ---
+    document.querySelectorAll('.top-nav-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const targetId = btn.dataset.target;
+            const panel = document.getElementById(targetId);
+            if (!panel) return;
+            
+            // Если кликнули по уже открытой вкладке — закрываем её
+            if (panel.classList.contains('active-dropdown')) {
+                panel.classList.remove('active-dropdown');
+                btn.classList.remove('active-btn');
+                return;
+            }
+            
+            // Иначе — закрываем все остальные и открываем нужную
+            document.querySelectorAll('.dropdown-panel').forEach(p => p.classList.remove('active-dropdown'));
+            document.querySelectorAll('.top-nav-btn').forEach(b => b.classList.remove('active-btn'));
+            
+            panel.classList.add('active-dropdown');
+            btn.classList.add('active-btn');
+            
+            // Выравниваем панель под нажатой кнопкой
+            const btnRect = btn.getBoundingClientRect();
+            panel.style.left = Math.max(10, Math.min(btnRect.left, window.innerWidth - panel.offsetWidth - 10)) + 'px';
+        });
+    });
+
+    // Закрытие выпадающего меню при клике в пустое место
+    const closeDropdowns = (e) => {
+        if (!e.target.closest('.dropdown-panel') && !e.target.closest('.top-nav-btn')) {
+            document.querySelectorAll('.dropdown-panel').forEach(p => p.classList.remove('active-dropdown'));
+            document.querySelectorAll('.top-nav-btn').forEach(b => b.classList.remove('active-btn'));
+        }
+    };
+    
+    document.addEventListener('mousedown', closeDropdowns);
+    document.addEventListener('touchstart', closeDropdowns, { passive: true });
+    // --- ПОИСК ПО КОМПОЗИТОРАМ (С ВЫПАДАЮЩИМ СПИСКОМ) ---
+    const searchInput = document.getElementById('ctrl-search');
+    const searchResults = document.getElementById('search-results');
+
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (!query) {
+            searchResults.classList.remove('visible');
+            return;
+        }
+
+        // Ищем только среди тех, кто сейчас отображен на экране
+        const matches = State.filteredItems.filter(i => 
+            i.name.toLowerCase().includes(query) || 
+            (i.engName && i.engName.toLowerCase().includes(query))
+        );
+
+        if (matches.length === 0) {
+            searchResults.innerHTML = '<div class="search-item" style="color: #888; cursor: default;">Ничего не найдено</div>';
+        } else {
+            searchResults.innerHTML = matches.map(m => 
+                `<div class="search-item" data-id="${m.id}">${m.name} <span style="color:#888; font-size:11px; margin-left:5px;">(${m.birth} — ${m.death === CURRENT_YEAR ? 'Наши дни' : m.death})</span></div>`
+            ).join('');
+        }
+        searchResults.classList.add('visible');
+    });
+
+    // Клик по композитору в списке
+    searchResults.addEventListener('click', (e) => {
+        const itemEl = e.target.closest('.search-item');
+        if (!itemEl || !itemEl.dataset.id) return; // Если кликнули на пустую область или сообщение "не найдено"
+        
+        const composer = State.filteredItems.find(c => c.id === itemEl.dataset.id);
+        if (composer) {
+            // 1. Прячем список и очищаем строку поиска
+            searchResults.classList.remove('visible');
+            searchInput.value = '';
+            
+            // 2. Вычисляем координаты центра блока композитора
+            const c = State.config;
+            const vp = document.getElementById('viewport');
+            
+            const composerCenterX = (composer.birth + (composer.lifespan / 2) - c.globalMinYear) * c.globalPixelsPerYear;
+            const composerCenterY = c.equatorY + composer.trackIndex * (c.trackHeight + c.trackMargin) + (c.trackHeight / 2);
+            
+            // 3. Вычисляем масштаб и целевую позицию камеры (targetScale регулирует силу приближения)
+            const targetScale = 2.0; 
+            const camTargetX = (vp.clientWidth / 2) - (composerCenterX * targetScale);
+            const camTargetY = (vp.clientHeight / 2) - (composerCenterY * targetScale);
+            
+            // 4. Летим к композитору (за 1.5 секунды)
+            Camera.flyToTarget(camTargetX, camTargetY, targetScale, 1500);
+
+            // 5. Показываем информацию (тултип) как при наведении курсора, когда камера долетит
+            setTimeout(() => {
+                Renderer.showComposerTooltip(composer);
+            }, 1500);
+        }
+    });
+
+    
+    // Закрытие списка при клике вне его области
+    const closeSearchDropdown = (e) => {
+        // ДОБАВЛЕНО: проверяем, что клик был не по строке поиска И не по самому списку результатов
+        if (!e.target.closest('.search-container') && !e.target.closest('.search-dropdown')) {
+            searchResults.classList.remove('visible');
+        }
+    };
+    document.addEventListener('mousedown', closeSearchDropdown);
+    document.addEventListener('touchstart', closeSearchDropdown, { passive: true });
+
+    
+    // --- ПРЯТАТЬ/ПОКАЗЫВАТЬ ФАКТЫ (Изначально выключено) ---
+    let factsVisible = false; 
+    document.getElementById('facts-layer').style.display = 'none';
+    
+    document.getElementById('btn-toggle-facts').addEventListener('click', (e) => {
+        factsVisible = !factsVisible;
+        e.target.classList.toggle('active-btn', factsVisible);
+        document.getElementById('facts-layer').style.display = factsVisible ? 'block' : 'none';
+        
+        if (!factsVisible) {
+            document.getElementById('facts-nav').classList.remove('visible');
+            document.getElementById('fact-card').classList.remove('visible');
+            Camera.exitFactModeManual();
+        } else {
+            document.getElementById('facts-nav').classList.add('visible');
+        }
+    });
+
+    // --- 3) ЭКСПОРТ В SVG ---
+    document.getElementById('btn-export-svg').addEventListener('click', () => {
+        const c = State.config;
+        const w = c.totalWidth;
+        const h = c.canvasHeight;
+        
+        let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">`;
+        
+        // Темный фон (берет цвет из CSS переменной)
+        svg += `<rect width="100%" height="100%" fill="#151515"/>`;
+        
+        // Отрисовка всех активных композиторов
+        State.filteredItems.forEach(item => {
+            const x = (item.birth - c.globalMinYear) * c.globalPixelsPerYear;
+            const y = c.equatorY + item.trackIndex * (c.trackHeight + c.trackMargin);
+            const width = item.lifespan * c.globalPixelsPerYear;
+            const height = c.trackHeight;
+            const color = getColor(State.filters.colorMode, State.filters.colorMode === 'era' ? item.era : item.country);
+            
+            svg += `<g transform="translate(${x}, ${y})">`;
+            // Блок композитора
+            svg += `<rect width="${width}" height="${height}" fill="${color}" stroke="#ffffff" stroke-width="1" rx="0"/>`;
+            // Текст имени
+            svg += `<text x="5" y="${height / 2 + 4}" fill="#ffffff" font-family="system-ui, sans-serif" font-size="12px" font-weight="bold">${item.name}</text>`;
+            svg += `</g>`;
+        });
+        
+        svg += `</svg>`;
+        
+        // Создание и скачивание файла
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'composers_timeline.svg';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
 }
 
 // --- ЗАГРУЗКА И СТАРТ ---
@@ -464,7 +803,10 @@ async function loadInitialData() {
             r[3] = parseSafeYear(r[3]) || CURRENT_YEAR; if (r[3] <= r[2]) r[3] = r[2] + 1;
             
             const rawEra = r[5] ? String(r[5]).trim() : 'Другое';
-            const country = r[6] ? String(r[6]).trim() : 'Не указана';
+            let countries = [];
+            if (r[7] && String(r[7]).trim() !== '') countries.push(String(r[7]).trim()); 
+            if (r[6] && String(r[6]).trim() !== '') countries.push(String(r[6]).trim()); 
+            const country = countries.length > 0 ? countries.join(', ') : 'Не указана';
             
             rawEra.split(',').forEach(e => {
                 const cleanEra = e.trim();
@@ -476,72 +818,151 @@ async function loadInitialData() {
                 countryCounts[cleanCountry] = (countryCounts[cleanCountry] || 0) + 1;
             });
             
-            State.rawItems.push({ id: `comp_${i}`, name: r[0], engName: r[1] || '', birth: r[2], death: r[3], lifespan: r[3] - r[2], era: rawEra, country });
+            // Читаем колонку произведений и округляем в большую сторону с шагом 50
+            const rawWorks = parseInt(r[8]) || 0;
+            const worksRounded = Math.ceil(rawWorks / 50) * 50;
+            
+            State.rawItems.push({ 
+                id: `comp_${i}`, 
+                name: r[0], 
+                engName: r[1] || '', 
+                birth: r[2], 
+                death: r[3], 
+                lifespan: r[3] - r[2], 
+                era: rawEra, 
+                country,
+                works: worksRounded // <-- СОХРАНЯЕМ ОКРУГЛЕННОЕ ЗНАЧЕНИЕ
+            });
         });
 
         // =====================================
-        // 1. СБОРКА ЭПОХ (Хронология + Романтизм)
+        // 1. СБОРКА ЭПОХ (Строгий порядок + Группировка)
         // =====================================
         let erasHTML = '';
-        const renderEra = (name, isSub = false, parent = '') => {
-            if (!eraCounts[name]) return ''; 
+        
+        // Функция-помощник: ищет точное название эпохи в данных независимо от регистра (больших/маленьких букв)
+        const getEraKey = (name) => Object.keys(eraCounts).find(k => k.toLowerCase() === name.toLowerCase());
+
+        // Обновленная функция отрисовки, поддерживающая кастомные названия (customLabel)
+        const renderEra = (name, isSub = false, parent = '', customLabel = null) => {
+            const actualKey = getEraKey(name);
+            if (!actualKey || !eraCounts[actualKey]) return ''; 
+            const count = eraCounts[actualKey];
+            const label = customLabel || actualKey; // Если передано кастомное имя, используем его
+            
             return `<label class="checkbox-label ${isSub ? 'sub-category' : ''}">
-                <input type="checkbox" value="${name}" checked ${isSub ? `class="group-child" data-parent="${parent}"` : ''}> 
-                ${name} <span style="color:#777; font-size:11px; margin-left:auto;">${eraCounts[name]}</span>
+                <input type="checkbox" value="${actualKey}" checked ${isSub ? `class="group-child" data-parent="${parent}"` : ''}> 
+                ${label} <span style="color:#777; font-size:11px; margin-left:auto;">${count}</span>
             </label>`;
         };
 
+        // 1. Самые современные (от новых к старым)
+        erasHTML += renderEra('XXI век');
         erasHTML += renderEra('XX век');
-        erasHTML += renderEra('авангард');
+        erasHTML += renderEra('Авангард');
 
-        const romanticsSum = (eraCounts['ранний романтизм'] || 0) + (eraCounts['романтизм'] || 0) + (eraCounts['поздний романтизм'] || 0);
+        // 2. Группа "Романтизм" (собираем Поздний, Зрелый и Ранний)
+        const lateRom = getEraKey('поздний романтизм');
+        const midRom = getEraKey('зрелый романтизм');
+        const earlyRom = getEraKey('ранний романтизм');
+        
+        const romanticsSum = (lateRom ? eraCounts[lateRom] : 0) + 
+                             (midRom ? eraCounts[midRom] : 0) + 
+                             (earlyRom ? eraCounts[earlyRom] : 0);
+                             
         if (romanticsSum > 0) {
             erasHTML += `<label class="checkbox-label group-master-label">
-                <span class="collapse-toggle" data-target="sub-romantics">▼</span>
+                <span class="collapse-toggle" data-target="sub-romantics">▶</span>
                 <input type="checkbox" class="group-master" data-group="romantics" checked> 
                 Романтизм <span style="color:#777; font-size:11px; margin-left:auto; font-weight:normal;">${romanticsSum}</span>
             </label>
-            <div id="sub-romantics">`;
-            erasHTML += renderEra('поздний романтизм', true, 'romantics');
-            erasHTML += renderEra('романтизм', true, 'romantics');
-            erasHTML += renderEra('ранний романтизм', true, 'romantics');
+            <div id="sub-romantics" class="collapsed-group">`;
+            
+            // Вложенные элементы строго от позднего к раннему
+            erasHTML += renderEra('поздний романтизм', true, 'romantics', 'Поздний');
+            erasHTML += renderEra('зрелый романтизм', true, 'romantics', 'Зрелый'); // Меняем отображаемое имя
+            erasHTML += renderEra('ранний романтизм', true, 'romantics', 'Ранний');
+            
             erasHTML += `</div>`;
         }
 
-        erasHTML += renderEra('классицизм');
-        erasHTML += renderEra('барокко');
+        // 3. Более ранние эпохи в строгом обратном порядке
+        erasHTML += renderEra('Классицизм');
+        erasHTML += renderEra('Барокко');
         erasHTML += renderEra('Возрождение');
         erasHTML += renderEra('Средневековье');
         
-        const processedEras = new Set(['XX век', 'авангард', 'поздний романтизм', 'романтизм', 'ранний романтизм', 'классицизм', 'барокко', 'Возрождение', 'Средневековье']);
+        // 4. Запасной вариант для любых других эпох (если ты добавишь новые в файл csv)
+        const processedEras = new Set(['xxi век', 'xx век', 'авангард', 'поздний романтизм', 'зрелый романтизм', 'ранний романтизм', 'классицизм', 'барокко', 'возрождение', 'средневековье']);
         Object.keys(eraCounts).forEach(e => {
-            if (!processedEras.has(e)) erasHTML += renderEra(e);
+            if (!processedEras.has(e.toLowerCase())) {
+                erasHTML += renderEra(e); // Они добавятся в самый конец списка
+            }
         });
 
         document.getElementById('ctrl-era').innerHTML = erasHTML;
         State.filters.eras = Object.keys(eraCounts);
 
         // =====================================
-        // 2. СБОРКА СТРАН (Группа "Другие")
+        // 2. СБОРКА СТРАН (Группировка)
         // =====================================
-        const sortedCountries = Object.entries(countryCounts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)); 
-        
-        const mainCountries = sortedCountries.filter(c => c.count > 1);
-        const singleCountries = sortedCountries.filter(c => c.count === 1);
+        const sortedCountries = Object.entries(countryCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)); 
 
-        let countriesHTML = mainCountries.map(c => 
+        // Определяем наши новые группы
+        const groupDeAt = ['Германия', 'Австрия'];
+        const groupFrNl = ['Франция', 'Нидерланды'];
+        const groupedNames = new Set([...groupDeAt, ...groupFrNl]);
+
+        // Фильтруем страны, которые не вошли в новые группы
+        const remainingCountries = sortedCountries.filter(c => !groupedNames.has(c.name));
+        
+        // ВАЖНО: Теперь отсекаем по 10 композиторам
+        const mainCountries = remainingCountries.filter(c => c.count >= 10);
+        const smallCountries = remainingCountries.filter(c => c.count < 10);
+
+        let countriesHTML = '';
+
+        // Универсальная функция для создания выпадающих групп (теперь изначально закрытых)
+        const renderCountryGroup = (groupId, groupTitle, countryNames) => {
+            const groupItems = sortedCountries.filter(c => countryNames.includes(c.name));
+            if (groupItems.length === 0) return '';
+            const totalCount = groupItems.reduce((sum, c) => sum + c.count, 0);
+            
+            let html = `<label class="checkbox-label group-master-label">
+                <span class="collapse-toggle" data-target="sub-${groupId}">▶</span>
+                <input type="checkbox" class="group-master" data-group="${groupId}" checked> 
+                ${groupTitle} <span style="color:#777; font-size:11px; margin-left:auto; font-weight:normal;">${totalCount}</span>
+            </label>
+            <div id="sub-${groupId}" class="collapsed-group">`; // Добавлен класс collapsed-group
+            
+            html += groupItems.map(c => 
+                `<label class="checkbox-label sub-category"><input type="checkbox" value="${c.name}" checked class="group-child" data-parent="${groupId}"> ${c.name} <span style="color:#777; font-size:11px; margin-left:auto;">${c.count}</span></label>`
+            ).join('');
+            html += `</div>`;
+            return html;
+        };
+
+        // Добавляем созданные группы в меню
+        countriesHTML += renderCountryGroup('group-de-at', 'Австрия и Германия', groupDeAt);
+        countriesHTML += renderCountryGroup('group-fr-nl', 'Франция и Нидерланды', groupFrNl);
+
+        // Добавляем остальные крупные страны (без группировки)
+        countriesHTML += mainCountries.map(c => 
             `<label class="checkbox-label"><input type="checkbox" value="${c.name}" checked> ${c.name} <span style="color:#777; font-size:11px; margin-left:auto;">${c.count}</span></label>`
         ).join('');
 
-        if (singleCountries.length > 0) {
+        // Группируем мелкие страны (< 10) в "Другие" (тоже изначально закрытую)
+        if (smallCountries.length > 0) {
             countriesHTML += `<label class="checkbox-label group-master-label">
-                <span class="collapse-toggle" data-target="sub-single-countries">▼</span>
-                <input type="checkbox" class="group-master" data-group="single-countries" checked> 
-                Другие (по одному) <span style="color:#777; font-size:11px; margin-left:auto; font-weight:normal;">${singleCountries.length}</span>
+                <span class="collapse-toggle" data-target="sub-small-countries">▶</span>
+                <input type="checkbox" class="group-master" data-group="small-countries" checked> 
+                Другие <span style="color:#777; font-size:11px; margin-left:auto; font-weight:normal;">${smallCountries.length}</span>
             </label>
-            <div id="sub-single-countries">`;
-            countriesHTML += singleCountries.map(c => 
-                `<label class="checkbox-label sub-category"><input type="checkbox" value="${c.name}" checked class="group-child" data-parent="single-countries"> ${c.name} <span style="color:#777; font-size:11px; margin-left:auto;">${c.count}</span></label>`
+            <div id="sub-small-countries" class="collapsed-group">`; // Добавлен класс collapsed-group
+            countriesHTML += smallCountries.map(c => 
+                `<label class="checkbox-label sub-category"><input type="checkbox" value="${c.name}" checked class="group-child" data-parent="small-countries"> ${c.name} <span style="color:#777; font-size:11px; margin-left:auto;">${c.count}</span></label>`
             ).join('');
             countriesHTML += `</div>`;
         }
@@ -549,7 +970,6 @@ async function loadInitialData() {
         document.getElementById('ctrl-country').innerHTML = countriesHTML;
         State.filters.countries = sortedCountries.map(c => c.name);
 
-        document.getElementById('ui-layer').classList.remove('ui-hidden'); document.getElementById('btn-show-menu').style.display = 'none'; document.getElementById('facts-nav').classList.add('visible');
         Engine.initGlobalLayout(); Engine.applyFiltersAndSort(); setTimeout(() => Camera.focusAll(false), 100);
     } catch (err) { console.error(err); alert("Ошибка: " + err.message); }
 }
