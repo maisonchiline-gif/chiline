@@ -1,3 +1,5 @@
+const ANIMATION_SPEED_MS = 1666; 
+document.documentElement.style.setProperty('--anim-time', (ANIMATION_SPEED_MS / 1000) + 's');
 const CURRENT_YEAR = new Date().getFullYear();
 let HISTORICAL_FACTS = [];
 
@@ -46,13 +48,20 @@ function parseSafeYear(val) {
 
 const State = {
     rawItems: [], filteredItems: [], domCache: {}, activeHighlights: [],
-    // Уменьшили толщину блока (trackHeight) и увеличили пустоту (trackMargin)
     config: { trackHeight: 72, trackMargin: 56, basePixelsPerYear: 1, globalPixelsPerYear: 1 },
-    filters: { widthFactor: 0.5, layoutMode: 'compact', graphMode: 'timeline', eras: [], countries: [], minLifespan: 0, maxLifespan: 120, minWorks: 0, maxWorks: 1400, sortBy: 'birth', colorMode: 'era' },    
+    filters: { 
+        widthFactor: 0.5, 
+        mainMode: 'timeline',           // 'timeline' | 'rating'
+        timelineLayout: 'compact',      // 'compact' | 'linear'
+        timelineGrouping: 'none',       // 'none' | 'country'
+        timelineSort: 'birth',          // 'birth' | 'death'
+        ratingMetric: 'bar_works',      
+        ratingGrouping: 'none',         
+        eras: [], countries: [], minLifespan: 0, maxLifespan: 120, minWorks: 0, maxWorks: 1400, colorMode: 'era' 
+    },    
     currentFactIndex: -1, updateFactNavUI: null,
     isInitialLoad: true
 };
-
 // Глобальный контроллер анимаций и обновлений DOM
 const DOMAnimator = {
     frame: null,
@@ -220,11 +229,10 @@ const Camera = {
         Renderer.highlightFact(-1); 
     },
 
-    flyToTarget(targetX, targetY, targetScale, baseDuration = 1200) {
+    flyToTarget(targetX, targetY, targetScale, exactDuration = null) {
         this.stopAnim();
         this.isFlying = true; 
         
-        // ПРЕД-РАСЧЕТ ГРАНИЦ: Заранее обрезаем конечную точку, чтобы не было "отскока" в конце
         const startX = this.x, startY = this.y, startScale = this.scale;
         this.x = targetX; this.y = targetY; this.scale = targetScale;
         this.clamp();
@@ -232,23 +240,28 @@ const Camera = {
         this.x = startX; this.y = startY; this.scale = startScale;
 
         const dist = Math.hypot(finalX - startX, finalY - startY);
-        const dynamicDuration = baseDuration + Math.min(7500, dist * 0.25);
-        const ease = t => t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+        
+        // Если передано точное время, используем его (для перегруппировки)
+        // Иначе динамическое, зависящее от расстояния (для полета к фактам)
+        const duration = exactDuration !== null ? exactDuration : 1200 + Math.min(7500, dist * 0.25);
+        
+        // МАГИЯ СИНХРОНИЗАЦИИ: Эта математическая формула полностью копирует
+        // CSS кривую cubic-bezier(.25, 1, .5, 1). Теперь камера и блоки движутся идентично!
+        const ease = t => 1 - Math.pow(1 - t, 4);
         
         let startTime = performance.now();
         
         const step = currentTime => {
-            let elapsed = Math.min(currentTime - startTime, dynamicDuration);
-            const t = ease(elapsed / dynamicDuration);
+            let elapsed = Math.min(currentTime - startTime, duration);
+            const t = ease(elapsed / duration);
             
-            // Интерполируем без округлений!
             this.x = startX + (finalX - startX) * t; 
             this.y = startY + (finalY - startY) * t; 
             this.scale = startScale + (finalScale - startScale) * t;
             
             this.update();
             
-            if (elapsed < dynamicDuration) {
+            if (elapsed < duration) {
                 this.animFrame = requestAnimationFrame(step); 
             } else {
                 this.isFlying = false; 
@@ -257,7 +270,7 @@ const Camera = {
         };
         this.animFrame = requestAnimationFrame(step);
         
-        return dynamicDuration;
+        return duration;
     },
 
     stopAnim() { 
@@ -269,11 +282,10 @@ const Camera = {
         const targetScale = Math.max(0.3, this.MIN_ZOOM);
         const targetX = (this.dom.vp.clientWidth / 2) - ((year - State.config.globalMinYear) * State.config.globalPixelsPerYear * targetScale);
         
-        // Камера тоже фокусируется ровно на середине нулевого трека
         const centerLineY = State.config.equatorY + (State.config.trackHeight / 2);
         const targetY = (this.dom.vp.clientHeight / 2) - (centerLineY * targetScale); 
         
-        this.flyToTarget(targetX, targetY, targetScale, 1200); 
+        return this.flyToTarget(targetX, targetY, targetScale); 
     },
 
     focusAll(animate = true) {
@@ -297,7 +309,7 @@ const Camera = {
         this.defX = targetX; this.defY = targetY; this.defScale = targetScale;
         
         if (animate) {
-            this.flyToTarget(targetX, targetY, targetScale, 1500);
+            this.flyToTarget(targetX, targetY, targetScale, ANIMATION_SPEED_MS);
         } else { 
             this.stopAnim();
             this.x = targetX; this.y = targetY; this.scale = targetScale; 
@@ -382,6 +394,29 @@ const Camera = {
         const textY = (75 - this.y) / this.scale;
         const gridText = document.getElementById('grid-text-container');
         const eraText = document.getElementById('era-label-container');
+
+        if (eraText && eraText._lastTextY !== textY) {
+            eraText.style.transform = 'translate3d(0, ' + textY + 'px, 0)';
+            eraText._lastTextY = textY;
+        }
+
+        // --- МАГИЧЕСКИЙ ОБХОД ЛИМИТОВ GPU ДЛЯ ФОНА И СЕТКИ ---
+        const invScale = 1 / this.scale;
+        const antiY = -this.y * invScale;
+        
+        const bgLayer = document.getElementById('bg-layer');
+        if (bgLayer && bgLayer._lastAntiY !== antiY) {
+            // Фон стоит на месте по Y и растягивается ровно на масштаб экрана
+            bgLayer.style.transform = 'translate3d(0, ' + antiY + 'px, 0) scaleY(' + invScale + ')';
+            bgLayer._lastAntiY = antiY;
+        }
+        
+        const gridLines = document.getElementById('grid-lines-container');
+        if (gridLines && gridLines._lastAntiY !== antiY) {
+            gridLines.style.transform = 'translate3d(0, ' + antiY + 'px, 0) scaleY(' + invScale + ')';
+            gridLines._lastAntiY = antiY;
+        }
+        // ------------------------------------------------------
         
         if (gridText && gridText._lastTextY !== textY) {
             gridText.style.transform = 'translate3d(0, ' + textY + 'px, 0)';
@@ -453,79 +488,93 @@ const Engine = {
     },
     applyFiltersAndSort() {
         const f = State.filters;
-        const gm = f.graphMode;
-        const isCountry = f.sortBy === 'country';
+        const isTimeline = f.mainMode === 'timeline';
 
-        State.filteredItems = State.rawItems.filter(i => 
-            i.parsedEras.some(e => f.eras.includes(e)) && 
-            i.parsedCountries.some(c => f.countries.includes(c)) && 
-            i.lifespan >= f.minLifespan && i.lifespan <= f.maxLifespan &&
-            i.works >= f.minWorks && i.works <= f.maxWorks
-        );
+        let baseCountryCounts = {};
+        let baseEraCounts = {};
 
-        // --- ШАГ А: Считаем вес каждой отдельной страны ---
-        let baseCounts = {};
-        State.filteredItems.forEach(i => {
-            i.country.split(',').forEach(p => {
-                const bg = getBaseGroup(p);
-                baseCounts[bg] = (baseCounts[bg] || 0) + 1;
-            });
-        });
+        State.filteredItems = State.rawItems.reduce((acc, i) => {
+            const isMatch = i.parsedEras.some(e => f.eras.includes(e)) && 
+                            i.parsedCountries.some(c => f.countries.includes(c)) && 
+                            i.lifespan >= f.minLifespan && i.lifespan <= f.maxLifespan &&
+                            i.works >= f.minWorks && i.works <= f.maxWorks;
 
-        // --- ШАГ Б: Присваиваем композитору его самую крупную группу ---
+            if (isMatch) {
+                acc.push(i);
+                
+                i.country.split(',').forEach(p => {
+                    const bg = getBaseGroup(p);
+                    baseCountryCounts[bg] = (baseCountryCounts[bg] || 0) + 1;
+                });
+                i.parsedEras.forEach(e => {
+                    baseEraCounts[e] = (baseEraCounts[e] || 0) + 1;
+                });
+            }
+            return acc;
+        }, []);
+
         let groupCounts = {};
         let groupEarliestBirth = {};
-        
+
         State.filteredItems.forEach(i => {
-            let bestGroup = 'Другое';
-            let maxCount = -1;
-            
-            // Ищем самую "тяжелую" страну из списка гражданств композитора
+            let maxC = -1, bestCountry = 'Другое';
             i.country.split(',').forEach(p => {
                 const bg = getBaseGroup(p);
-                if (baseCounts[bg] > maxCount) {
-                    maxCount = baseCounts[bg];
-                    bestGroup = bg;
-                }
+                if (baseCountryCounts[bg] > maxC) { maxC = baseCountryCounts[bg]; bestCountry = bg; }
             });
-            
-            // Сохраняем определенную группу для сортировки и расцветки
-            i.primaryGroup = bestGroup; 
-            
-            if (isCountry) {
-                groupCounts[bestGroup] = (groupCounts[bestGroup] || 0) + 1;
-                if (groupEarliestBirth[bestGroup] === undefined || i.birth < groupEarliestBirth[bestGroup]) {
-                    groupEarliestBirth[bestGroup] = i.birth;
+            i.primaryGroup = bestCountry; 
+
+            let maxE = -1, bestEra = 'Другое';
+            i.parsedEras.forEach(e => {
+                if (baseEraCounts[e] > maxE) { maxE = baseEraCounts[e]; bestEra = e; }
+            });
+            i.primaryEra = bestEra;
+
+            let activeGroup = 'none';
+            // Используем новую переменную timelineGrouping
+            if (isTimeline && f.timelineGrouping === 'country') {
+                activeGroup = i.primaryGroup;
+            } else if (!isTimeline && f.ratingGrouping === 'country') {
+                activeGroup = i.primaryGroup;
+            } else if (!isTimeline && f.ratingGrouping === 'era') {
+                activeGroup = i.primaryEra;
+            }
+            i.activeGroup = activeGroup;
+
+            if (activeGroup !== 'none') {
+                groupCounts[activeGroup] = (groupCounts[activeGroup] || 0) + 1;
+                if (groupEarliestBirth[activeGroup] === undefined || i.birth < groupEarliestBirth[activeGroup]) {
+                    groupEarliestBirth[activeGroup] = i.birth;
                 }
             }
         });
 
-        // --- ШАГ В: Сортировка ---
         State.filteredItems.sort((a, b) => {
-            if (isCountry) {
-                const groupA = a.primaryGroup;
-                const groupB = b.primaryGroup;
+            const groupA = a.activeGroup;
+            const groupB = b.activeGroup;
+            
+            if (groupA !== 'none' && groupB !== 'none' && groupA !== groupB) {
+                const diff = groupCounts[groupB] - groupCounts[groupA];
+                if (diff !== 0) return diff;
                 
-                if (groupA !== groupB) {
-                    const diff = groupCounts[groupB] - groupCounts[groupA];
-                    if (diff !== 0) return diff;
-                    
-                    const birthDiff = groupEarliestBirth[groupA] - groupEarliestBirth[groupB];
-                    if (birthDiff !== 0) return birthDiff;
-                    
-                    return groupA.localeCompare(groupB);
+                const birthDiff = groupEarliestBirth[groupA] - groupEarliestBirth[groupB];
+                if (birthDiff !== 0) return birthDiff;
+                
+                return groupA.localeCompare(groupB);
+            }
+            
+            if (isTimeline) {
+                return a[f.timelineSort] - b[f.timelineSort];
+            } else {
+                if (f.ratingMetric === 'bar_works') return b.works - a.works;
+                if (f.ratingMetric === 'bar_age') return b.lifespan - a.lifespan;
+                if (f.ratingMetric === 'bar_productivity') {
+                    const pA = a.works / Math.max(1, a.lifespan);
+                    const pB = b.works / Math.max(1, b.lifespan);
+                    return pB - pA;
                 }
             }
-            
-            if (gm === 'bar_works') return b.works - a.works;
-            if (gm === 'bar_age') return b.lifespan - a.lifespan;
-            if (gm === 'bar_productivity') {
-                const pA = a.works / Math.max(1, a.lifespan);
-                const pB = b.works / Math.max(1, b.lifespan);
-                return pB - pA;
-            }
-            
-            return isCountry ? a.birth - b.birth : a[f.sortBy] - b[f.sortBy];
+            return 0;
         });
 
         document.getElementById('total-count').innerText = State.filteredItems.length;
@@ -534,13 +583,14 @@ const Engine = {
     calculateLayout() {
         if (!State.filteredItems.length) return Renderer.drawAll();        
         const c = State.config, f = State.filters, rowH = c.trackHeight + c.trackMargin;
-        const isTimeline = f.graphMode === 'timeline';
-        const mode = isTimeline ? f.layoutMode : 'linear';
-        const sortBy = f.sortBy;
+        const isTimeline = f.mainMode === 'timeline';
+        
+        f.graphMode = isTimeline ? 'timeline' : f.ratingMetric;
+        const isLinear = (!isTimeline || f.timelineLayout === 'linear');
 
         let maxUp = 0, maxDown = 0;
-
         c.maxBarWidth = 0;
+
         if (!isTimeline) {
             State.filteredItems.forEach(item => {
                 let w = 0;
@@ -551,7 +601,7 @@ const Engine = {
             });
         }
 
-        if (mode === 'linear') {
+        if (isLinear) {
             if (!isTimeline) {
                 State.filteredItems.forEach((item, i) => item.trackIndex = i);
                 maxUp = 100; 
@@ -559,11 +609,11 @@ const Engine = {
             } else {
                 const total = State.filteredItems.length, half = Math.floor(total / 2);
                 State.filteredItems.forEach((item, i) => item.trackIndex = i - half);
-                
                 maxDown = half * rowH + 150; maxUp = Math.abs(half - total) * rowH + 150;
             }
         } else {
-            if (sortBy === 'birth' || sortBy === 'death') {
+            // Разветвление на основе новой переменной timelineGrouping
+            if (f.timelineGrouping === 'none') {
                 let trackEnds = {}, minT = 0, maxT = 0;
                 State.filteredItems.forEach(item => {
                     let d = 0, placed = false;
@@ -574,12 +624,10 @@ const Engine = {
                     }
                 });
                 maxUp = Math.abs(minT) * rowH + 150; maxDown = maxT * rowH + 150;
-            } else {
+            } else if (f.timelineGrouping === 'country') {
                 let trackEnds = {}, maxT = 0, baseTrack = 0, prevGroup = null;
                 State.filteredItems.forEach(item => {
-                    // Используем заранее определенную главную группу
-                    const currentGroup = item.primaryGroup;
-                    
+                    const currentGroup = item.activeGroup;
                     if (prevGroup !== null && prevGroup !== currentGroup) baseTrack = maxT + 1;
                     prevGroup = currentGroup;
                     
@@ -595,6 +643,7 @@ const Engine = {
                 maxDown = maxT * rowH + 150;
             }
         }
+        
         const halfCanvas = Math.max(maxUp, maxDown);
         c.equatorY = isTimeline ? halfCanvas : 150; 
         c.canvasHeight = isTimeline ? halfCanvas * 2 : maxDown;
@@ -602,15 +651,11 @@ const Engine = {
         Camera.updateLimits(); 
         Renderer.drawAll();
         
-        // --- МГНОВЕННОЕ ЦЕНТРИРОВАНИЕ ПРИ ЗАГРУЗКЕ ---
         if (State.isInitialLoad) {
-            Camera.focusAll(false);      // animate = false
+            Camera.focusAll(false);      
             State.isInitialLoad = false; 
         } else {
-            // Даем браузеру 50мс на Paint новых DOM-узлов перед стартом анимации
-            setTimeout(() => {
-                Camera.focusAll(true);       // animate = true
-            }, 50);
+            Camera.focusAll(true);
         }
     }
 };
@@ -623,12 +668,21 @@ const Renderer = {
         this.layers.items.addEventListener('mouseout', e => { if (e.target.closest('.composer-block')) this.hideTooltip(); });
         this.layers.facts.addEventListener('mouseover', e => { const m = e.target.closest('.fact-marker'); if (m) this.showFactTooltip(HISTORICAL_FACTS[m.dataset.index]); });
         this.layers.facts.addEventListener('mouseout', e => { if (e.target.closest('.fact-marker')) this.hideTooltip(); });
-        window.addEventListener('mousemove', e => { if (this.tooltip.style.visibility === 'visible') { this.tooltip.style.left = (e.clientX + 15) + 'px'; this.tooltip.style.top = (e.clientY + 15) + 'px'; }});
+        
+        let tipFrame;
+        window.addEventListener('mousemove', e => { 
+            if (this.tooltip.style.visibility === 'visible') { 
+                if (tipFrame) cancelAnimationFrame(tipFrame);
+                tipFrame = requestAnimationFrame(() => {
+                    this.tooltip.style.left = (e.clientX + 15) + 'px'; 
+                    this.tooltip.style.top = (e.clientY + 15) + 'px'; 
+                });
+            }
+        });
     },
     drawAll() { 
         const isTimeline = State.filters.graphMode === 'timeline';
         
-        // Используем visibility вместо display, чтобы не триггерить Reflow
         const vis = isTimeline ? 'visible' : 'hidden';
         this.layers.bg.style.visibility = vis;
         this.layers.grid.style.visibility = vis;
@@ -636,14 +690,16 @@ const Renderer = {
         
         if (isTimeline) {
             const c = State.config;
-            // Уникальный ключ состояния сетки. Защищает от холостых рендеров.
-            const gridHash = `${c.trueMinYear}_${c.trueMaxYear}_${c.globalPixelsPerYear}_${c.canvasHeight}_${c.equatorY}_${State.filters.layoutMode}`;            
+            // Убрали c.equatorY из хэша, чтобы сетка не перестраивалась при смещении оси Y
+            const gridHash = `\({c.trueMinYear}_\){c.trueMaxYear}_\({c.globalPixelsPerYear}_\){c.canvasHeight}_${State.filters.layoutMode}`;            
             if (this._lastGridHash !== gridHash) {
                 this.drawBackgroundEras(); 
                 this.drawGrid(); 
-                this.drawFacts(); 
                 this._lastGridHash = gridHash;
             }
+            
+            // Вызываем всегда, чтобы факты и линия могли плавно обновить свои координаты
+            this.drawFacts(); 
         }
         
         this.drawItems(); 
@@ -651,19 +707,55 @@ const Renderer = {
     },
     drawFacts() {
         const c = State.config;
-        let factsHtml = '';
-        HISTORICAL_FACTS.forEach((f, i) => {
-            const xPos = (f.year - c.globalMinYear) * c.globalPixelsPerYear;
-            factsHtml += '<' + 'div class="fact-marker" data-index="' + i + '" style="left:' + xPos + 'px; top:' + c.equatorY + 'px;">💡<' + '/div>';
-        });
-        this.layers.facts.innerHTML = factsHtml;
+        
+        let eq = document.getElementById('main-equator-line');
+        if (!eq) {
+            eq = document.createElement('div');
+            eq.id = 'main-equator-line';
+            eq.className = 'equator-line';
+            this.layers.grid.appendChild(eq);
+        }
+        
+        const equatorWidth = (CURRENT_YEAR - c.trueMinYear) * c.globalPixelsPerYear;
+        const centerLineY = c.equatorY + (c.trackHeight / 2); // <- Вычисленный центр линии
+        
+        eq.style.width = equatorWidth + 'px';
+        eq.style.left = ((c.trueMinYear - c.globalMinYear) * c.globalPixelsPerYear) + 'px';
+        eq.style.top = centerLineY + 'px';
+        eq.style.display = State.filters.layoutMode === 'compact' ? 'block' : 'none';
+
+        const existingFacts = this.layers.facts.querySelectorAll('.fact-marker');
+        
+        if (existingFacts.length === HISTORICAL_FACTS.length) {
+            existingFacts.forEach((el, i) => {
+                const f = HISTORICAL_FACTS[i];
+                const xPos = (f.year - c.globalMinYear) * c.globalPixelsPerYear;
+                el.style.left = xPos + 'px';
+                el.style.top = centerLineY + 'px'; // <- ИСПРАВЛЕНИЕ ТУТ
+            });
+        } else {
+            this.layers.facts.innerHTML = ''; 
+            const frag = document.createDocumentFragment();
+            
+            HISTORICAL_FACTS.forEach((f, i) => {
+                const xPos = (f.year - c.globalMinYear) * c.globalPixelsPerYear;
+                const el = document.createElement('div');
+                el.className = 'fact-marker';
+                el.dataset.index = i;
+                el.style.left = xPos + 'px';
+                el.style.top = centerLineY + 'px'; // <- И ИСПРАВЛЕНИЕ ТУТ
+                el.innerHTML = '💡';
+                frag.appendChild(el);
+            });
+            this.layers.facts.appendChild(frag);
+        }
     },
     highlightFact(index) {
         document.querySelectorAll('.fact-marker').forEach(m => m.classList.remove('active-fact'));
         if (index !== -1) document.querySelector(`.fact-marker[data-index="${index}"]`)?.classList.add('active-fact');
     },
     drawBackgroundEras() {
-        const eraStats = {}, c = State.config, h = Math.max(c.canvasHeight, 300);
+        const eraStats = {}, c = State.config; 
         State.rawItems.forEach(i => { if (!eraStats[i.era]) eraStats[i.era] = { min: 9999, max: -9999 }; eraStats[i.era].min = Math.min(eraStats[i.era].min, i.birth); eraStats[i.era].max = Math.max(eraStats[i.era].max, i.death); });
         const erasArr = Object.keys(eraStats).map(e => ({ era: e, center: (eraStats[e].min + eraStats[e].max) / 2 })).sort((a, b) => a.center - b.center);
         
@@ -687,28 +779,45 @@ const Renderer = {
         
         stops.push(lastColor + ' 98%', 'var(--c-bg) 100%');
 
-        // Включаем will-change: transform для парящего эффекта без лагов
         this.layers.bg.innerHTML = '<' + 'div id="era-label-container" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; will-change: transform;">' + labelHtml + '<' + '/div>';
-        this.layers.bg.style.cssText = 'position:absolute; top:0; height:' + h + 'px; left:' + gradientLeft + 'px; width:' + gradientWidth + 'px; background:linear-gradient(to right, ' + stops.join(', ') + ')';
+        
+        // ВМЕСТО HEIGHT в пикселях используем 100vh и выставляем стартовый transform
+        this.layers.bg.style.cssText = 'position:absolute; top:0; height:100vh; transform-origin:top; left:' + gradientLeft + 'px; width:' + gradientWidth + 'px; background:linear-gradient(to right, ' + stops.join(', ') + ')';
+        
+        if (Camera.scale) {
+            const invScale = 1 / Camera.scale;
+            const antiY = -Camera.y * invScale;
+            this.layers.bg.style.transform = 'translate3d(0, ' + antiY + 'px, 0) scaleY(' + invScale + ')';
+            this.layers.bg._lastAntiY = antiY;
+        }
     },
     drawGrid() {
         if (!State.rawItems.length) return;
-        const c = State.config, h = Math.max(c.canvasHeight, 300);
+        const c = State.config; // УБРАНА ПЕРЕМЕННАЯ h
         
-        // Чанки по 2000 лет (оптимально для сокращения проверок)
         const CHUNK_YEARS = 2000; 
         const startC = Math.floor(c.trueMinYear / CHUNK_YEARS) * CHUNK_YEARS;
         const endC = Math.ceil(c.trueMaxYear / CHUNK_YEARS) * CHUNK_YEARS;
         
-        this.layers.grid.innerHTML = '';
-        this.gridChunks = []; // Массив для Frustum Culling
+        Array.from(this.layers.grid.children).forEach(child => {
+            if (child.id !== 'main-equator-line') child.remove();
+        });
+        this.gridChunks = []; 
         
         const linesContainer = document.createElement('div');
-        linesContainer.style.cssText = 'position:absolute; inset:0; pointer-events:none;';
+        linesContainer.id = 'grid-lines-container'; // ДОБАВЛЕН ID ДЛЯ КАМЕРЫ
+        // ИСПОЛЬЗУЕМ 100vh
+        linesContainer.style.cssText = 'position:absolute; left:0; right:0; top:0; height:100vh; transform-origin:top; pointer-events:none; will-change:transform;';
         
+        if (Camera.scale) {
+            const invScale = 1 / Camera.scale;
+            const antiY = -Camera.y * invScale;
+            linesContainer.style.transform = 'translate3d(0, ' + antiY + 'px, 0) scaleY(' + invScale + ')';
+            linesContainer._lastAntiY = antiY;
+        }
+
         const textsContainer = document.createElement('div');
         textsContainer.id = 'grid-text-container';
-        // Плавающий текст с GPU-ускорением
         textsContainer.style.cssText = 'position:absolute; inset:0; pointer-events:none; z-index:200; will-change:transform;';
         
         for (let chunkY = startC; chunkY <= endC; chunkY += CHUNK_YEARS) {
@@ -716,7 +825,8 @@ const Renderer = {
             const chunkWidth = CHUNK_YEARS * c.globalPixelsPerYear;
             
             const lineChunk = document.createElement('div');
-            lineChunk.style.cssText = 'position:absolute; left:' + chunkX + 'px; top:0; width:' + chunkWidth + 'px; height:' + h + 'px;';
+            // ВМЕСТО h ИСПОЛЬЗУЕМ 100%
+            lineChunk.style.cssText = 'position:absolute; left:' + chunkX + 'px; top:0; width:' + chunkWidth + 'px; height:100%;';
             
             const textChunk = document.createElement('div');
             textChunk.style.cssText = 'position:absolute; left:' + chunkX + 'px; top:0; width:' + chunkWidth + 'px; height:100px;';
@@ -729,7 +839,8 @@ const Renderer = {
                 const tier = y % 10000 === 0 ? 10000 : y % 5000 === 0 ? 5000 : y % 1000 === 0 ? 1000 : y % 500 === 0 ? 500 : y % 100 === 0 ? 100 : 50;
                 const localX = (y - chunkY) * c.globalPixelsPerYear;
                 
-                linesHtml += '<' + 'div class="year-marker step-' + tier + '" style="left:' + localX + 'px; top:0; height:' + h + 'px;"><' + '/div>';
+                // ВМЕСТО h ИСПОЛЬЗУЕМ 100%
+                linesHtml += '<' + 'div class="year-marker step-' + tier + '" style="left:' + localX + 'px; top:0; height:100%;"><' + '/div>';
                 let label = y < 0 ? Math.abs(y) : (y === 0 ? '0' : y);
                 textsHtml += '<' + 'div class="year-text-wrapper step-' + tier + '" style="position:absolute; left:' + localX + 'px; top:0;"><' + 'div class="year-text">' + label + '<' + '/div><' + '/div>';
             }
@@ -740,7 +851,6 @@ const Renderer = {
             linesContainer.appendChild(lineChunk);
             textsContainer.appendChild(textChunk);
             
-            // Сохраняем ссылки для быстрого скрытия
             this.gridChunks.push({
                 lineEl: lineChunk,
                 textEl: textChunk,
@@ -750,14 +860,9 @@ const Renderer = {
             });
         }
         
-        const equatorWidth = (CURRENT_YEAR - c.trueMinYear) * c.globalPixelsPerYear;
-        const centerLineY = c.equatorY + (c.trackHeight / 2);
-        
-        // Используем insertAdjacentHTML, чтобы не разрушить ссылки на DOM-узлы внутри контейнера!
-        linesContainer.insertAdjacentHTML('beforeend', '<' + 'div class="equator-line" style="width:' + equatorWidth + 'px; left:' + ((c.trueMinYear - c.globalMinYear) * c.globalPixelsPerYear) + 'px; top:' + centerLineY + 'px; display:' + (State.filters.layoutMode === 'compact' ? 'block' : 'none') + ';"><' + '/div>');
-        
         const currentYearPos = (CURRENT_YEAR - c.globalMinYear) * c.globalPixelsPerYear;
-        linesContainer.insertAdjacentHTML('beforeend', '<' + 'div class="current-time-line" style="left:' + currentYearPos + 'px; top:0; height:' + h + 'px;"><' + '/div>');
+        // ВМЕСТО h ИСПОЛЬЗУЕМ 100%
+        linesContainer.insertAdjacentHTML('beforeend', '<' + 'div class="current-time-line" style="left:' + currentYearPos + 'px; top:0; height:100%;"><' + '/div>');
             
         this.layers.grid.appendChild(linesContainer);
         this.layers.grid.appendChild(textsContainer);
@@ -769,14 +874,14 @@ const Renderer = {
         
         const gm = State.filters.graphMode;
         const colorMode = State.filters.colorMode;
-        const isList = gm !== 'timeline';
-        const isLinear = State.filters.layoutMode === 'linear' || isList;
+        const isTimeline = State.filters.mainMode === 'timeline';
+        const isList = !isTimeline;
+        const isLinear = isList || State.filters.timelineLayout === 'linear';
         
         const gppy = c.globalPixelsPerYear;
         const minYear = c.globalMinYear;
         const eqY = c.equatorY;
         const trackStep = c.trackHeight + c.trackMargin;
-        const isTimeline = gm === 'timeline';
         const isBarWorks = gm === 'bar_works';
         const isBarAge = gm === 'bar_age';
         const isBarProd = gm === 'bar_productivity';
@@ -967,18 +1072,33 @@ function setupFactsNavigation() {
         State.currentFactIndex = idx; 
         Renderer.hideTooltip();
         
+        // 1. Мгновенно скрываем карточку и гасим ВСЕ предыдущие маркеры
+        card.classList.remove('visible'); 
+        Renderer.highlightFact(-1); 
+        
         if (idx === -1) { 
             Camera.focusAll(true); 
-            Renderer.highlightFact(-1); 
-            card.classList.remove('visible'); 
         } else { 
             const f = HISTORICAL_FACTS[idx]; 
-            Camera.flyToYear(f.year); 
-            Renderer.highlightFact(idx); 
-            document.getElementById('fact-card-year').innerText = f.year < 0 ? Math.abs(f.year) + ' год до н.э.' : f.year + ' год'; 
-            document.getElementById('fact-card-title').innerText = f.title; 
-            document.getElementById('fact-card-text').innerText = f.text; 
-            card.classList.add('visible'); 
+            const flightTime = Camera.flyToYear(f.year); 
+            
+            // Задаем опережение (например, за 400 мс до конца полета). 
+            // Math.max(0, ...) спасает от отрицательных чисел, если полет был очень быстрым.
+            const popupDelay = Math.max(0, flightTime - 595); 
+            
+            // 2. Ждем вычисленное время
+            setTimeout(() => {
+                if (State.currentFactIndex === idx) {
+                    
+                    // 3. Запускаем анимацию кругляшка И появление карточки СИНХРОННО
+                    Renderer.highlightFact(idx); 
+                    
+                    document.getElementById('fact-card-year').innerText = f.year < 0 ? Math.abs(f.year) + ' год до н.э.' : f.year + ' год'; 
+                    document.getElementById('fact-card-title').innerText = f.title; 
+                    document.getElementById('fact-card-text').innerText = f.text; 
+                    card.classList.add('visible'); 
+                }
+            }, popupDelay); // <--- Используем новую переменную popupDelay
         }
         State.updateFactNavUI();
     }
@@ -997,51 +1117,152 @@ function setupFactsNavigation() {
     State.updateFactNavUI();
 }
 
-function setupControls() {
-    const layoutSel = document.getElementById('ctrl-layout'), 
-          sortSel = document.getElementById('ctrl-sort'), 
-          optLife = sortSel.querySelector('option[value="lifespan"]');
+function setupDualSlider(minId, maxId, stateKey) {
+    const minInput = document.getElementById(minId);
+    const maxInput = document.getElementById(maxId);
     
-    const updateLocks = () => { 
-        const isLifespan = sortSel.value === 'lifespan';
-        if (optLife) { optLife.disabled = true; optLife.hidden = true; }
-        if (isLifespan) { sortSel.value = 'birth'; State.filters.sortBy = 'birth'; return true; }
-        return false;
+    // Формирование ключей для State.filters (minLifespan, maxWorks и т.д.)
+    const stateMin = 'min' + stateKey;
+    const stateMax = 'max' + stateKey;
+
+    if (!minInput || !maxInput) return;
+
+    const minLabel = document.getElementById(minId.replace('ctrl-', 'val-'));
+    const maxLabel = document.getElementById(maxId.replace('ctrl-', 'val-'));
+    const trackId = 'track-' + stateKey.toLowerCase().replace('lifespan', 'life');
+    const track = document.getElementById(trackId);
+
+    // Обработчик 'input': плавное обновление без залипаний
+    const updateUI = () => {
+        let val1 = parseInt(minInput.value);
+        let val2 = parseInt(maxInput.value);
+
+        // Магия здесь: мы больше не блокируем ползунки.
+        // Мы просто вычисляем реальное МИН и МАКС из двух значений.
+        let realMin = Math.min(val1, val2);
+        let realMax = Math.max(val1, val2);
+
+        // Обновляем текст
+        if (minLabel) minLabel.innerText = realMin;
+        if (maxLabel) maxLabel.innerText = realMax + (stateKey === 'Works' && realMax == 1400 ? '+' : '');
+
+        // Закрашиваем активную часть полоски строго от меньшего к большему
+        if (track) {
+            const maxAttr = parseInt(minInput.max);
+            const percent1 = (realMin / maxAttr) * 100;
+            const percent2 = (realMax / maxAttr) * 100;
+            track.style.left = percent1 + '%';
+            track.style.width = (percent2 - percent1) + '%';
+            track.style.backgroundColor = 'var(--c-accent)';
+        }
     };
 
-    updateLocks();
+    // Обработчик 'change': запись в State и фильтрация
+    const applyFilter = () => {
+        let val1 = parseInt(minInput.value);
+        let val2 = parseInt(maxInput.value);
+
+        // Отправляем в фильтры правильные значения независимо от того,
+        // какой именно физический ползунок сейчас слева, а какой справа
+        State.filters[stateMin] = Math.min(val1, val2);
+        State.filters[stateMax] = Math.max(val1, val2);
+        Engine.applyFiltersAndSort();
+    };
+
+    // Привязка событий (передавать 'e' больше не нужно)
+    minInput.addEventListener('input', updateUI);
+    maxInput.addEventListener('input', updateUI);
+    minInput.addEventListener('change', applyFilter);
+    maxInput.addEventListener('change', applyFilter);
     
-    layoutSel.addEventListener('change', e => { 
-        State.filters.layoutMode = e.target.value; 
-        const sortChanged = updateLocks(); 
-        sortChanged ? Engine.applyFiltersAndSort() : Engine.calculateLayout(); 
-    });
+    // Первичная отрисовка линии при загрузке
+    updateUI();
+}
 
-    sortSel.addEventListener('change', e => { 
-        State.filters.sortBy = e.target.value; updateLocks(); Engine.applyFiltersAndSort(); 
-    });
+function setupControls() {
+    const branchTimeline = document.getElementById('branch-timeline');
+    const branchRating = document.getElementById('branch-rating');
+    
+    // Переключатель главного дерева выбора
+    const updateVisibility = () => {
+        if (State.filters.mainMode === 'timeline') {
+            branchTimeline.style.display = 'block';
+            branchRating.style.display = 'none';
+        } else {
+            branchTimeline.style.display = 'none';
+            branchRating.style.display = 'block';
+        }
+    };
 
-    const bindSelect = (id, key, needsLayout = false) => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('change', e => { 
-            State.filters[key] = e.target.value; 
-            needsLayout ? Engine.calculateLayout() : Engine.applyFiltersAndSort(); 
+    // Функция-помощник для привязки кнопок-переключателей
+    const bindSwitch = (id, key, needsLayout = false, isColor = false) => {
+        const container = document.getElementById(id);
+        if (!container) return;
+        
+        const buttons = container.querySelectorAll('.switch-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                buttons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                State.filters[key] = btn.dataset.val;
+
+                // --- АВТОМАТИЧЕСКОЕ ПЕРЕКЛЮЧЕНИЕ ЦВЕТА ---
+                if (key === 'timelineGrouping' || key === 'ratingGrouping') {
+                    if (btn.dataset.val === 'country') {
+                        State.filters.colorMode = 'country';
+                    } else if (btn.dataset.val === 'era') {
+                        State.filters.colorMode = 'era';
+                    } else if (btn.dataset.val === 'none') {
+                        // Возврат на базовую расцветку (по эпохам) при выборе "Общая"
+                        State.filters.colorMode = 'era';
+                    }
+                    
+                    // Визуально переключаем кнопку в блоке "Расцветка"
+                    const colorContainer = document.getElementById('ctrl-color');
+                    if (colorContainer) {
+                        colorContainer.querySelectorAll('.switch-btn').forEach(cb => {
+                            cb.classList.toggle('active', cb.dataset.val === State.filters.colorMode);
+                        });
+                    }
+                }
+                // ------------------------------------------
+                
+                if (isColor) {
+                    Renderer.drawItems(); 
+                } else if (key === 'mainMode') {
+                    updateVisibility();
+                    Engine.applyFiltersAndSort();
+                } else {
+                    needsLayout ? Engine.calculateLayout() : Engine.applyFiltersAndSort();
+                }
+            });
         });
     };
+
+    // Привязываем переключатели (Таймлайн)
+    bindSwitch('ctrl-main-mode', 'mainMode');
+    bindSwitch('ctrl-timeline-layout', 'timelineLayout', true);
+    bindSwitch('ctrl-timeline-grouping', 'timelineGrouping', false); 
+    bindSwitch('ctrl-timeline-sort', 'timelineSort', false);
     
-    // Отдельный обработчик для расцветки, который НЕ триггерит камеру
-    document.getElementById('ctrl-color').addEventListener('change', e => {
-        State.filters.colorMode = e.target.value;
-        Renderer.drawItems(); // Только обновляем стили блоков, без сброса камеры
-    });
+    // Привязываем переключатели (Рейтинг)
+    bindSwitch('ctrl-rating-metric', 'ratingMetric', false);
+    bindSwitch('ctrl-rating-grouping', 'ratingGrouping', false);
+
+    // Привязываем переключатель расцветки
+    bindSwitch('ctrl-color', 'colorMode', false, true); 
     
-    bindSelect('ctrl-graph-mode', 'graphMode', false);
-    
+    updateVisibility();
+
+    // Обработчик ползунка масштаба
     document.getElementById('ctrl-width').addEventListener('input', e => { 
         State.filters.widthFactor = parseFloat(e.target.value); 
         Engine.updateWidth(); 
     });
 
+    // ... остальной код функции setupControls (bindCbGroup, setupDualSlider и т.д.) остаётся без изменений!
     const bindCbGroup = (id, key) => {
         const container = document.getElementById(id);
         if (!container) return; 
@@ -1062,6 +1283,9 @@ function setupControls() {
             Engine.applyFiltersAndSort();
         });
     };
+
+    setupDualSlider('ctrl-min-life', 'ctrl-max-life', 'Lifespan');
+    setupDualSlider('ctrl-min-works', 'ctrl-max-works', 'Works');
 
     bindCbGroup('ctrl-era', 'eras'); bindCbGroup('ctrl-country', 'countries');
 
@@ -1088,72 +1312,6 @@ function setupControls() {
             }
         }
     });
-
-    const updateSliderUI = (minId, maxId, trackId, e) => {
-        const minEl = document.getElementById(minId), maxEl = document.getElementById(maxId), track = document.getElementById(trackId);
-        if (!minEl || !maxEl || !track) return;
-        const min = parseFloat(minEl.min), max = parseFloat(minEl.max);
-        const minVal = parseFloat(minEl.value), maxVal = parseFloat(maxEl.value);
-        const percentMin = ((minVal - min) / (max - min)) * 100, percentMax = ((maxVal - min) / (max - min)) * 100;
-        
-        track.style.background = `linear-gradient(to right, color-mix(in srgb, var(--c-txt) 20%, transparent) ${percentMin}%, var(--c-accent) ${percentMin}%, var(--c-accent) ${percentMax}%, color-mix(in srgb, var(--c-txt) 20%, transparent) ${percentMax}%)`;
-
-        if (e) {
-            e.target.style.zIndex = 5;
-            document.getElementById(e.target.id === minId ? maxId : minId).style.zIndex = 4;
-        }
-    };
-
-    const updateLifeUI = e => { 
-        let min = parseInt(document.getElementById('ctrl-min-life').value);
-        let max = parseInt(document.getElementById('ctrl-max-life').value); 
-        if (e && e.target.id === 'ctrl-min-life' && min > max) document.getElementById('ctrl-min-life').value = min = max; 
-        if (e && e.target.id === 'ctrl-max-life' && max < min) document.getElementById('ctrl-max-life').value = max = min; 
-        
-        document.getElementById('val-min-life').innerText = min; 
-        document.getElementById('val-max-life').innerText = max; 
-        
-        updateSliderUI('ctrl-min-life', 'ctrl-max-life', 'track-life', e);
-    };
-
-    const applyLifeFilter = e => {
-        let min = parseInt(document.getElementById('ctrl-min-life').value);
-        let max = parseInt(document.getElementById('ctrl-max-life').value); 
-        State.filters.minLifespan = min; State.filters.maxLifespan = max; 
-        Engine.applyFiltersAndSort(); 
-    };
-    
-    document.getElementById('ctrl-min-life').addEventListener('input', updateLifeUI); 
-    document.getElementById('ctrl-max-life').addEventListener('input', updateLifeUI);
-    document.getElementById('ctrl-min-life').addEventListener('change', applyLifeFilter);
-    document.getElementById('ctrl-max-life').addEventListener('change', applyLifeFilter);
-
-    const updateWorksUI = e => { 
-        let min = parseInt(document.getElementById('ctrl-min-works').value);
-        let max = parseInt(document.getElementById('ctrl-max-works').value); 
-        if (e && e.target.id === 'ctrl-min-works' && min > max) document.getElementById('ctrl-min-works').value = min = max; 
-        if (e && e.target.id === 'ctrl-max-works' && max < min) document.getElementById('ctrl-max-works').value = max = min; 
-        
-        document.getElementById('val-min-works').innerText = min; 
-        document.getElementById('val-max-works').innerText = max >= 1400 ? '1400+' : max; 
-        
-        updateSliderUI('ctrl-min-works', 'ctrl-max-works', 'track-works', e);
-    };
-
-    const applyWorksFilter = e => {
-        let min = parseInt(document.getElementById('ctrl-min-works').value);
-        let max = parseInt(document.getElementById('ctrl-max-works').value); 
-        State.filters.minWorks = min; State.filters.maxWorks = max; 
-        Engine.applyFiltersAndSort(); 
-    };
-
-    document.getElementById('ctrl-min-works').addEventListener('input', updateWorksUI); 
-    document.getElementById('ctrl-max-works').addEventListener('input', updateWorksUI);
-    document.getElementById('ctrl-min-works').addEventListener('change', applyWorksFilter);
-    document.getElementById('ctrl-max-works').addEventListener('change', applyWorksFilter);
-
-    updateSliderUI('ctrl-min-life', 'ctrl-max-life', 'track-life', null);
-    updateSliderUI('ctrl-min-works', 'ctrl-max-works', 'track-works', null);
 
     document.querySelectorAll('.top-nav-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1216,7 +1374,8 @@ function setupControls() {
                 const camTargetX = (vp.clientWidth / 2) - (composerCenterX * targetScale);
                 const camTargetY = (vp.clientHeight / 2) - (composerCenterY * targetScale);
 
-                const flightTime = Camera.flyToTarget(camTargetX, camTargetY, targetScale, 1200);
+                // Замените старую строчку на эту
+                const flightTime = Camera.flyToTarget(camTargetX, camTargetY, targetScale);
 
                 setTimeout(() => {
                     Renderer.showComposerTooltip(composer);

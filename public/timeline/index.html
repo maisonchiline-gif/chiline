@@ -89,40 +89,73 @@
         </div>
     </div>
 
-    <!-- ПАНЕЛЬ ВНЕШНЕГО ВИДА + ЭКСПОРТ -->
+    <!-- ПАНЕЛЬ ВНЕШНЕГО ВИДА + ЭКСПОРТ (НОВАЯ ЛОГИКА) -->
+    <!-- ПАНЕЛЬ ВНЕШНЕГО ВИДА + ЭКСПОРТ (НОВАЯ ЛОГИКА С ПЕРЕКЛЮЧАТЕЛЯМИ) -->
     <div id="drop-appearance" class="dropdown-panel">
+        
+        <!-- ГЛАВНЫЙ РУБИЛЬНИК -->
         <div class="filter-group">
-            <label>Вид отображения:</label>
-            <select id="ctrl-layout">
-                <option value="compact">Компактный</option>
-                <option value="linear">Построчный</option>
-            </select>
-        </div>
-        <div class="filter-group">
-            <label>Построение графа:</label>
-            <select id="ctrl-sort">
-                <option value="birth">По году рождения</option>
-                <option value="death">По году смерти</option>
-                <option value="lifespan">По продолжительности жизни</option>
-                <option value="country">По странам (Группировка)</option>
-            </select>
+            <label>Режим отображения:</label>
+            <div class="toggle-switch" id="ctrl-main-mode">
+                <button class="switch-btn active" data-val="timeline">Таймлайн</button>
+                <button class="switch-btn" data-val="rating">Рейтинг</button>
+            </div>
         </div>
 
-        <div class="filter-group">
-            <label>Ось X (Режим графика):</label>
-            <select id="ctrl-graph-mode">
-                <option value="timeline">Ось времени (Хронология)</option>
-                <option value="bar_works">Гистограмма: Количество произведений</option>
-                <option value="bar_age">Гистограмма: Возраст (Долгожители)</option>
-                <option value="bar_productivity">Гистограмма: Продуктивность (произв. в год)</option>
-            </select>
+        <!-- ВЕТКА 1: ТАЙМЛАЙН -->
+        <div id="branch-timeline">
+            <div class="filter-group">
+                <label>Компоновка:</label>
+                <div class="toggle-switch" id="ctrl-timeline-layout">
+                    <button class="switch-btn active" data-val="compact">Компактно</button>
+                    <button class="switch-btn" data-val="linear">Списком</button>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label>Группировка:</label>
+                <div class="toggle-switch" id="ctrl-timeline-grouping">
+                    <button class="switch-btn active" data-val="none">Общая</button>
+                    <button class="switch-btn" data-val="country">По странам</button>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label>Сортировка:</label>
+                <div class="toggle-switch" id="ctrl-timeline-sort">
+                    <button class="switch-btn active" data-val="birth">Рождение</button>
+                    <button class="switch-btn" data-val="death">Смерть</button>
+                </div>
+            </div>
         </div>
+
+        <!-- ВЕТКА 2: РЕЙТИНГ (СТАТИСТИКА) -->
+        <div id="branch-rating" style="display:none;">
+            <div class="filter-group">
+                <label>Показатель (Ось X):</label>
+                <div class="toggle-switch toggle-switch-col" id="ctrl-rating-metric">
+                    <button class="switch-btn active" data-val="bar_works">Произведения</button>
+                    <button class="switch-btn" data-val="bar_age">Годы жизни</button>
+                    <button class="switch-btn" data-val="bar_productivity">Продуктивность</button>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label>Группировка:</label>
+                <div class="toggle-switch toggle-switch-col" id="ctrl-rating-grouping">
+                    <button class="switch-btn active" data-val="none">Общая</button>
+                    <button class="switch-btn" data-val="country">По странам</button>
+                    <button class="switch-btn" data-val="era">По эпохам</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ОБЩИЕ НАСТРОЙКИ -->
+        <hr style="border: none; border-top: 1px solid color-mix(in srgb, var(--c-txt) 20%, transparent); margin: 15px 0;">
+        
         <div class="filter-group">
             <label>Расцветка:</label>
-            <select id="ctrl-color">
-                <option value="era">По эпохам</option>
-                <option value="country">По странам</option>
-            </select>
+            <div class="toggle-switch" id="ctrl-color">
+                <button class="switch-btn active" data-val="era">Эпохи</button>
+                <button class="switch-btn" data-val="country">Страны</button>
+            </div>
         </div>
         <div class="filter-group">
             <label>Длина блоков:</label>
