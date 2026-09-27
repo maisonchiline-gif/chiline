@@ -55,7 +55,7 @@
     <!-- ПАНЕЛЬ СОРТИРОВКИ -->
     <div id="drop-filters" class="dropdown-panel">
         <div class="filter-group">
-            <label>Возраст: от <span id="val-min-life">0</span> до <span id="val-max-life">120</span> лет</label>
+            <label for="ctrl-min-life">Возраст: от <span id="val-min-life">0</span> до <span id="val-max-life">120</span> лет</label>
             <div class="dual-slider-wrapper">
                 <div class="dual-slider-track" id="track-life"></div>
                 <input type="range" id="ctrl-min-life" min="0" max="120" value="0">
@@ -64,7 +64,7 @@
         </div>
         <hr style="border: none; border-top: 1px solid color-mix(in srgb, var(--c-txt) 20%, transparent); margin: 15px 0;">
         <div class="filter-group">
-            <label>Произведений: от <span id="val-min-works">0</span> до <span id="val-max-works">1400+</span></label>
+            <label for="ctrl-min-works">Произведений: от <span id="val-min-works">0</span> до <span id="val-max-works">1400+</span></label>
             <div class="dual-slider-wrapper">
                 <div class="dual-slider-track" id="track-works"></div>
                 <input type="range" id="ctrl-min-works" min="0" max="1400" step="50" value="0">
@@ -74,7 +74,7 @@
         <hr style="border: none; border-top: 1px solid color-mix(in srgb, var(--c-txt) 20%, transparent); margin: 15px 0;">
         <div class="filter-group">
             <div class="filter-header">
-                <label style="margin:0;">Эпохи:</label>
+                <span class="filter-label" style="margin:0;">Эпохи:</span>
                 <a href="#" class="toggle-all" data-target="ctrl-era">Вкл/Выкл все</a>
             </div>
             <div id="ctrl-era" class="checkbox-container"></div>
@@ -82,20 +82,19 @@
         <hr style="border: none; border-top: 1px solid color-mix(in srgb, var(--c-txt) 20%, transparent); margin: 15px 0;">
         <div class="filter-group">
             <div class="filter-header">
-                <label style="margin:0;">Страны:</label>
+                <span class="filter-label" style="margin:0;">Страны:</span>
                 <a href="#" class="toggle-all" data-target="ctrl-country">Вкл/Выкл все</a>
             </div>
             <div id="ctrl-country" class="checkbox-container"></div>
         </div>
     </div>
 
-    <!-- ПАНЕЛЬ ВНЕШНЕГО ВИДА + ЭКСПОРТ (НОВАЯ ЛОГИКА) -->
     <!-- ПАНЕЛЬ ВНЕШНЕГО ВИДА + ЭКСПОРТ (НОВАЯ ЛОГИКА С ПЕРЕКЛЮЧАТЕЛЯМИ) -->
     <div id="drop-appearance" class="dropdown-panel">
         
         <!-- ГЛАВНЫЙ РУБИЛЬНИК -->
         <div class="filter-group">
-            <label>Режим отображения:</label>
+            <span class="filter-label">Режим отображения:</span>
             <div class="toggle-switch" id="ctrl-main-mode">
                 <button class="switch-btn active" data-val="timeline">Таймлайн</button>
                 <button class="switch-btn" data-val="rating">Рейтинг</button>
@@ -105,21 +104,21 @@
         <!-- ВЕТКА 1: ТАЙМЛАЙН -->
         <div id="branch-timeline">
             <div class="filter-group">
-                <label>Компоновка:</label>
+                <span class="filter-label">Компоновка:</span>
                 <div class="toggle-switch" id="ctrl-timeline-layout">
                     <button class="switch-btn active" data-val="compact">Компактно</button>
                     <button class="switch-btn" data-val="linear">Списком</button>
                 </div>
             </div>
             <div class="filter-group">
-                <label>Группировка:</label>
+                <span class="filter-label">Группировка:</span>
                 <div class="toggle-switch" id="ctrl-timeline-grouping">
                     <button class="switch-btn active" data-val="none">Общая</button>
                     <button class="switch-btn" data-val="country">По странам</button>
                 </div>
             </div>
             <div class="filter-group">
-                <label>Сортировка:</label>
+                <span class="filter-label">Сортировка:</span>
                 <div class="toggle-switch" id="ctrl-timeline-sort">
                     <button class="switch-btn active" data-val="birth">Рождение</button>
                     <button class="switch-btn" data-val="death">Смерть</button>
@@ -130,7 +129,7 @@
         <!-- ВЕТКА 2: РЕЙТИНГ (СТАТИСТИКА) -->
         <div id="branch-rating" style="display:none;">
             <div class="filter-group">
-                <label>Показатель (Ось X):</label>
+                <span class="filter-label">Показатель (Ось X):</span>
                 <div class="toggle-switch toggle-switch-col" id="ctrl-rating-metric">
                     <button class="switch-btn active" data-val="bar_works">Произведения</button>
                     <button class="switch-btn" data-val="bar_age">Годы жизни</button>
@@ -138,7 +137,7 @@
                 </div>
             </div>
             <div class="filter-group">
-                <label>Группировка:</label>
+                <span class="filter-label">Группировка:</span>
                 <div class="toggle-switch toggle-switch-col" id="ctrl-rating-grouping">
                     <button class="switch-btn active" data-val="none">Общая</button>
                     <button class="switch-btn" data-val="country">По странам</button>
@@ -151,14 +150,14 @@
         <hr style="border: none; border-top: 1px solid color-mix(in srgb, var(--c-txt) 20%, transparent); margin: 15px 0;">
         
         <div class="filter-group">
-            <label>Расцветка:</label>
+            <span class="filter-label">Расцветка:</span>
             <div class="toggle-switch" id="ctrl-color">
                 <button class="switch-btn active" data-val="era">Эпохи</button>
                 <button class="switch-btn" data-val="country">Страны</button>
             </div>
         </div>
         <div class="filter-group">
-            <label>Длина блоков:</label>
+            <label for="ctrl-width">Длина блоков:</label>
             <input type="range" id="ctrl-width" min="0.1" max="1" step="0.05" value="0.5">
         </div>
         <button id="btn-export-svg" class="top-nav-btn" style="width: 100%; text-align: center; margin-top: 10px; border-color: var(--c-txt); color: var(--c-txt);">Экспорт в SVG</button>

@@ -38,7 +38,7 @@ html, body {
 
 /* ФИЛЬТРЫ И ВЫПАДАЮЩИЕ МЕНЮ */
 .filter-group { margin-bottom: 1.25rem; }
-:is(.filter-group > label, .filter-header label) { display: block; margin-bottom: .5rem; font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: var(--c-t60); }
+:is(.filter-group > label, .filter-header label, .filter-label) { display: block; margin-bottom: .5rem; font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: var(--c-t60); }
 :is(.filter-group select, .filter-group input[type="range"]) {
     width: 100%; padding: .5rem; background: var(--c-bg); color: var(--c-txt);
     border: var(--border); font-size: .875rem; font-family: inherit; cursor: pointer;
@@ -55,7 +55,7 @@ select option:disabled { color: var(--c-t40); font-style: italic; }
 .composer-block {
     position: absolute; top: 0; left: 0; z-index: 1; display: flex; align-items: center; overflow: hidden;
     border: 1px solid var(--c-t20); contain: layout style paint; content-visibility: auto; contain-intrinsic-size: auto 112px;
-    transition: transform var(--anim-time) cubic-bezier(.25,1,.5,1), width var(--anim-time) cubic-bezier(.25,1,.5,1), height var(--anim-time) cubic-bezier(.25,1,.5,1), opacity var(--anim-time), background-color var(--anim-time), filter var(--anim-time);
+    transition: transform var(--anim-time) cubic-bezier(.25,1,.5,1), opacity var(--anim-time), background-color var(--anim-time), filter var(--anim-time);
 }
 #items-layer.initial-render :is(.composer-block, .composer-bg) { transition: none !important; }
 .composer-block.hidden { opacity: 0; pointer-events: none; transform: scale(.9); }
@@ -85,30 +85,87 @@ select option:disabled { color: var(--c-t40); font-style: italic; }
 .fact-marker.active-fact { z-index: 1000; background: var(--c-accent); color: var(--c-bg); border-color: var(--c-accent); box-shadow: 4px 4px 0 rgba(0,0,0,.5); transform: translate(-50%, -50%) scale(1.5); }
 
 /* ОБЩИЕ ПАНЕЛИ (Glassmorphism) */
-:is(#fact-card, #facts-nav, .dropdown-panel, .search-dropdown, #tooltip) { background: var(--c-b95); border: var(--border); backdrop-filter: blur(10px); }
-:is(#fact-card, #facts-nav, .dropdown-panel, #tooltip) { box-shadow: 4px 4px 0 rgba(0,0,0,.5); }
+:is(#fact-card, .dropdown-panel, .search-dropdown, #tooltip) { background: var(--c-b95); border: var(--border); backdrop-filter: blur(10px); }
+:is(#fact-card, .dropdown-panel, #tooltip) { box-shadow: 4px 4px 0 rgba(0,0,0,.5); }
 
 #fact-card {
     position: absolute; z-index: 95; bottom: 5.5rem; left: 50%; width: 90%; max-width: 28rem; padding: 1.875rem; text-align: center;
     box-shadow: 8px 8px 0 rgba(0,0,0,.5); opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(1.5rem); transition: var(--panel-anim);
 }
+/* === КЛОНИРУЕМ СТИЛЬ ВЕРХНЕЙ ПАНЕЛИ ДЛЯ НИЖНЕЙ === */
 #facts-nav {
-    position: absolute; z-index: 100; bottom: 1.25rem; left: 50%; display: flex; align-items: center; gap: .5rem; padding: .75rem 1.25rem;
-    opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(1.5rem); transition: var(--panel-anim);
+    --ui-size: 3rem; 
+    --ui-gap: .25rem;
+    position: fixed; 
+    z-index: 1000; 
+    bottom: 1.25rem; 
+    left: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    gap: var(--ui-gap); 
+    padding: var(--ui-gap);
+    backdrop-filter: blur(10px);
+    opacity: 0; 
+    pointer-events: none; 
+    transform: translateX(-50%) translateY(1.5rem); 
+    transition: var(--panel-anim);
 }
+
 :is(#fact-card.visible, #facts-nav.visible) { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
 
-#fact-card h3 { margin: 0 0 1rem; font-size: 1.1rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--c-accent); }
-#fact-card .fact-year { margin-bottom: .625rem; font-size: .8rem; letter-spacing: .15em; text-transform: uppercase; color: var(--c-t60); }
-#fact-card p { margin: 0; font-size: .95rem; line-height: 1.6; color: var(--c-txt); }
-#btn-close-fact { position: absolute; top: .625rem; right: .9375rem; background: none; border: none; font-size: 1.125rem; color: var(--c-txt); cursor: pointer; transition: all .2s; }
-#btn-close-fact:hover { color: var(--c-accent); transform: scale(1.2); }
+/* Стили кнопок фактов теперь идентичны кнопкам верхней панели */
+:is(.nav-btn, #fact-info-display) { 
+    height: var(--ui-size); 
+    box-sizing: border-box; 
+    border: var(--border); 
+    background: transparent; 
+    color: var(--c-txt); 
+}
 
-.nav-btn-square { padding: 0; width: 2.2rem; font-size: 1.2rem; }
-.nav-btn { height: 2.2rem; padding: 0 .75rem; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: .7rem; font-weight: 600; letter-spacing: .15em; text-transform: uppercase; background: var(--c-bg); color: var(--c-txt); border: 1px solid var(--c-txt); cursor: pointer; transition: all .2s; }
-.nav-btn:hover:not(:disabled) { background: var(--c-txt); color: var(--c-bg); }
-.nav-btn:disabled { opacity: .3; cursor: not-allowed; border-color: var(--c-t30); }
-#fact-info-display { min-width: 8.75rem; font-size: .7rem; font-weight: 600; letter-spacing: .15em; text-transform: uppercase; text-align: center; color: var(--c-txt); white-space: nowrap; }
+.nav-btn { 
+    padding: 0 1rem; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    white-space: nowrap; 
+    font-size: .7rem; 
+    font-weight: 600; 
+    letter-spacing: .15em; 
+    text-transform: uppercase; 
+    cursor: pointer; 
+    transition: all .2s; 
+}
+
+.nav-btn-square { 
+    width: var(--ui-size); 
+    padding: 0; 
+    font-size: 1.2rem; 
+}
+
+.nav-btn:hover:not(:disabled) { 
+    background: var(--c-t10); /* Такой же ховер, как у верхних кнопок */
+    border-color: var(--c-txt); 
+}
+
+.nav-btn:disabled { 
+    opacity: .3; 
+    cursor: not-allowed; 
+}
+
+#fact-info-display { 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 8.75rem; 
+    padding: 0 1rem;
+    font-size: .7rem; 
+    font-weight: 600; 
+    letter-spacing: .15em; 
+    text-transform: uppercase; 
+    white-space: nowrap; 
+    background: var(--c-b50); /* Такой же фон, как у счетчика композиторов наверху */
+}
 
 #tooltip { position: fixed; top: 0; left: 0; z-index: 1000; min-width: 12.5rem; padding: .9375rem 1.25rem; font-size: .85rem; line-height: 1.6; color: var(--c-txt); visibility: hidden; opacity: 0; pointer-events: none; transition: opacity .15s; }
 .tooltip-title { margin-bottom: .5rem; padding-bottom: .3rem; font-size: 1rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--c-accent); border-bottom: 1px solid var(--c-t20); }
@@ -121,7 +178,21 @@ select option:disabled { color: var(--c-t40); font-style: italic; }
 .collapsed-group { display: none !important; }
 
 /* ВЕРХНЯЯ ПАНЕЛЬ */
-#top-bar { --ui-size: 3rem; --ui-gap: .25rem; position: fixed; left: 50%; transform: translateX(-50%); z-index: 1; display: flex; align-items: center; justify-content: center; gap: var(--ui-gap); padding: var(--ui-gap); backdrop-filter: blur(10px); }
+#top-bar { 
+    --ui-size: 3rem; 
+    --ui-gap: .25rem; 
+    position: fixed; 
+    top: 0; /* Принудительно прижимаем к верхнему краю */
+    left: 50%; 
+    transform: translateX(-50%); 
+    z-index: 1000; /* Увеличено с 1, чтобы канвас не перекрывал меню */
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: var(--ui-gap); 
+    padding: var(--ui-gap); 
+    backdrop-filter: blur(10px); 
+}
 :is(.icon-btn, #ctrl-search, .top-bar-title) { height: var(--ui-size); box-sizing: border-box; border: var(--border); background: transparent; color: var(--c-txt); }
 .icon-btn { width: var(--ui-size); flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
 .icon-btn:hover { background: var(--c-t10); border-color: var(--c-txt); }
@@ -156,14 +227,84 @@ select option:disabled { color: var(--c-t40); font-style: italic; }
 .dual-slider-wrapper input[type="range"]::-webkit-slider-thumb { width: 1rem; height: 1rem; background: var(--c-accent); border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.5); cursor: pointer; pointer-events: auto; appearance: none; -webkit-appearance: none; }
 .dual-slider-wrapper input[type="range"]::-moz-range-thumb { width: 1rem; height: 1rem; background: var(--c-accent); border: none; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.5); cursor: pointer; pointer-events: auto; }
 
+
 /* АДАПТАЦИЯ (Медиазапросы) */
 @media (max-width: 768px) { 
-    :is(#fact-card, #facts-nav, .dropdown-panel, #top-bar) { backdrop-filter: none; background: rgba(21, 21, 21, .98); }
-    .search-container { min-width: 10rem; }
-    #ctrl-search { max-width: none; }
-    .top-bar-title { font-size: .9rem; }
-    #fact-card { bottom: 1rem; padding: 1.25rem; }
-    #facts-nav { bottom: 5.5rem; }
+    /* === ВЕРХНЯЯ ПАНЕЛЬ === */
+    #top-bar {
+        width: 100%; /* Занимает всю ширину устройства */
+        left: 0;
+        transform: none; /* Отменяем центрирование */
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        justify-content: space-between; 
+        padding: 0.25rem 0.5rem;
+        --ui-size: 2.5rem; 
+    }
+
+    /* Скрываем надпись "Композиторов:", чтобы освободить место для поиска */
+    .top-bar-title { 
+        display: none; 
+    }
+    
+    .search-container { 
+        min-width: 0; 
+        flex-grow: 1; /* Поиск занимает всё доступное свободное место */
+        margin: 0 0.5rem;
+    }
+    
+    #ctrl-search { 
+        max-width: none; 
+        padding: 0 0.5rem;
+    }
+
+    /* === ВЫПАДАЮЩИЕ МЕНЮ === */
+    .dropdown-panel {
+        max-width: 100%;
+        top: 3rem; /* Сдвигаем прямо под измененную верхнюю панель */
+        border-left: none;
+        border-right: none;
+    }
+
+    /* === НИЖНИЕ ПЛАШКИ ФАКТОВ === */
+    #facts-nav { 
+        bottom: 0; 
+        width: 100%; 
+        left: 0;
+        transform: none !important; /* Убиваем центрирование для мобилок */
+        justify-content: space-between;
+        padding: 0.25rem 0.5rem;
+        --ui-size: 2.5rem; /* Уменьшаем высоту кнопок, как на верхней панели */
+    }
+    
+    #fact-info-display {
+        min-width: 0;
+        flex-grow: 1; /* Растягиваем текстовый блок по центру, как поиск наверху */
+        margin: 0 0.5rem;
+        font-size: 0.6rem; 
+    }
+
+    .nav-btn {
+        font-size: 0.65rem;
+        padding: 0 0.4rem;
+    }
+    
+    .nav-btn-square {
+        width: 2rem;
+    }
+
+    #fact-card { 
+        bottom: 3.5rem; /* Карточка с текстом располагается СТРОГО НАД навигацией */
+        width: 100%; 
+        border-left: none;
+        border-right: none;
+        padding: 1rem; 
+        max-height: 45vh; /* Ограничиваем высоту, чтобы текст не закрыл весь экран */
+        overflow-y: auto; /* Включаем прокрутку, если текст очень длинный */
+        border-radius: 0;
+    }
 }
 
 /* УБИРАЕМ СКРОЛЛБАРЫ */

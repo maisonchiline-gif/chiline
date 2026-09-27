@@ -174,6 +174,60 @@ const Camera = {
         vp.addEventListener('pointermove', e => {
             if (this.isDragging && e.isPrimary) { e.preventDefault(); pointerMove(e.clientX, e.clientY); }
         });
+
+        // --- ИНТЕГРАЦИЯ PINCH-TO-ZOOM ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ ---
+let initialPinchDist = null;
+let initialScale = 1;
+
+vp.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+        this.stopAnim();
+        this.isDragging = false; 
+        // Вычисляем начальное расстояние между двумя пальцами
+        initialPinchDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialScale = this.scale;
+    }
+}, { passive: false });
+
+vp.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+        e.preventDefault(); // Блокируем нативный зум iOS
+        
+        const currentDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+        
+        const zoomFactor = currentDist / initialPinchDist;
+        let newScale = Math.max(this.MIN_ZOOM, Math.min(initialScale * zoomFactor, this.MAX_ZOOM));
+        
+        // Центр между двумя пальцами
+        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const rect = vp.getBoundingClientRect();
+        const mx = centerX - rect.left;
+        const my = centerY - rect.top;
+        
+        if (State.filters.graphMode === 'timeline') {
+            this.x = mx - (mx - this.x) * (newScale / this.scale);
+        }
+        this.y = my - (my - this.y) * (newScale / this.scale);
+        this.scale = newScale;
+        
+        this.clamp(); 
+        this.requestUpdate();
+    }
+}, { passive: false });
+
+vp.addEventListener('touchend', e => {
+    if (e.touches.length < 2) {
+        initialPinchDist = null;
+    }
+});
+
         vp.addEventListener('pointerup', pointerEnd);
         vp.addEventListener('pointercancel', pointerEnd);
 
@@ -381,15 +435,60 @@ const Camera = {
                 const isVisible = (c.right >= checkMin) && (c.left <= checkMax);
                 
                 if (c.isVisible !== isVisible) {
-                    c.isVisible = isVisible;
-                    // Мгновенное удаление/возврат из дерева рендера (0 лагов!)
-                    const disp = isVisible ? 'block' : 'none';
-                    c.lineEl.style.display = disp;
-                    c.textEl.style.display = disp;
-                }
+    c.isVisible = isVisible;
+    const vis = isVisible ? 'visible' : 'hidden';
+    c.lineEl.style.visibility = vis;
+    c.textEl.style.visibility = vis;
+}
             });
         }
         // ==========================================
+
+        // ==========================================
+// CULLING ДЛЯ КОМПОЗИТОРОВ (СПАСЕНИЕ ПАМЯТИ НА iOS)
+// ==========================================
+if (this.dom.vp && State.filteredItems.length > 0) {
+    const vpW = this.dom.vp.clientWidth;
+    const vpH = this.dom.vp.clientHeight;
+    
+    // Границы экрана с небольшим запасом для плавности
+    const minX = -this.x / this.scale - 200;
+    const maxX = (vpW - this.x) / this.scale + 200;
+    const minY = -this.y / this.scale - 200;
+    const maxY = (vpH - this.y) / this.scale + 200;
+    
+    const gppy = State.config.globalPixelsPerYear || 1;
+    const trackStep = State.config.trackHeight + State.config.trackMargin;
+    
+    State.filteredItems.forEach(item => {
+        const el = State.domCache[item.id];
+        if (!el) return;
+        
+        let itemX, itemRight, itemY;
+        
+        if (State.filters.graphMode === 'timeline') {
+            itemX = (item.birth - State.config.globalMinYear) * gppy;
+            itemRight = itemX + (item.lifespan * gppy);
+            itemY = State.config.equatorY + item.trackIndex * trackStep;
+        } else {
+            // Упрощенная логика для режима рейтинга
+            itemX = 0;
+            itemRight = vpW; 
+            itemY = State.config.equatorY + item.trackIndex * trackStep;
+        }
+        
+        const itemBottom = itemY + State.config.trackHeight;
+        
+        // Проверка видимости
+        const isVisible = (itemRight >= minX && itemX <= maxX && itemBottom >= minY && itemY <= maxY);
+        
+        // Мгновенное отключение узла из дерева рендеринга
+        const vis = isVisible ? 'visible' : 'hidden';
+if (el.style.visibility !== vis) {
+    el.style.visibility = vis;
+}
+    });
+}
 
         const textY = (75 - this.y) / this.scale;
         const gridText = document.getElementById('grid-text-container');
@@ -663,6 +762,7 @@ const Engine = {
 const Renderer = {
     layers: { bg: document.getElementById('bg-layer'), grid: document.getElementById('grid-layer'), facts: document.getElementById('facts-layer'), items: document.getElementById('items-layer') },
     tooltip: document.getElementById('tooltip'),
+
     initEvents() {
         this.layers.items.addEventListener('mouseover', e => { const b = e.target.closest('.composer-block'); if (b) { const i = State.filteredItems.find(x => x.id === b.dataset.id); if (i) this.showComposerTooltip(i); }});
         this.layers.items.addEventListener('mouseout', e => { if (e.target.closest('.composer-block')) this.hideTooltip(); });
