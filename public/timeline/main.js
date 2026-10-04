@@ -146,16 +146,27 @@ function syncPopupPosition() {
 
     const pos = camera.worldToScreen(layoutX + layoutW, layoutY);
     let screenX = pos.x + 15; 
-    const screenY = pos.y;
+    let screenY = pos.y;
 
-    const popupWidth = 220; 
+    const popupWidth = popupUI.container.offsetWidth || 220; 
+    const popupHeight = popupUI.container.offsetHeight || 150;
+
     if (screenX + popupWidth > window.innerWidth) {
         const leftPos = camera.worldToScreen(layoutX, layoutY);
         screenX = leftPos.x - popupWidth - 15;
     }
+    
+    if (screenX < 10) screenX = 10;
 
-    const finalX = Math.round(screenX);
-    const finalY = Math.round(screenY);
+    let finalX = Math.round(screenX);
+    let finalY = Math.round(screenY);
+
+    if (finalY + popupHeight > window.innerHeight - 10) {
+        finalY = window.innerHeight - popupHeight - 10;
+    }
+    if (finalY < 70) {
+        finalY = 70;
+    }
 
     const transformStr = 'translate(' + finalX + 'px, ' + finalY + 'px)';
     
@@ -376,9 +387,8 @@ function buildDynamicCheckboxes() {
         
         if (opts.isMaster) {
             const toggle = document.createElement('span');
-            // Добавляем класс 'collapsed' сразу, чтобы CSS повернул иконку вправо
             toggle.className = 'collapse-toggle collapsed'; 
-            toggle.textContent = '▼'; // Используем иконку вниз как базовую
+            toggle.textContent = '▼';
             
             toggle.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -386,7 +396,6 @@ function buildDynamicCheckboxes() {
                 const targetDiv = document.getElementById('sub-' + opts.groupId);
                 if (targetDiv) {
                     targetDiv.classList.toggle('collapsed-group');
-                    // Вместо замены текста переключаем класс, чтобы сработала плавная CSS-анимация
                     toggle.classList.toggle('collapsed');
                 }
             });
@@ -665,8 +674,6 @@ function bindEvents() {
             return;
         }
 
-        // ИСПРАВЛЕНИЕ: Отменяем закрытие панелей фильтров при клике на холст. 
-        // Закрываем только список поиска, если кликнули мимо него.
         if (!e.target.closest('.search-container') && !e.target.closest('.search-dropdown')) {
             const searchResults = document.getElementById('search-results');
             if (searchResults) searchResults.classList.remove('visible');
@@ -675,6 +682,8 @@ function bindEvents() {
 
     document.getElementById('btn-jump-composers').addEventListener('click', function() {
         if (appState.factsMode) toggleFactsMode(); 
+        closeComposerPopup(); // Очищаем всё перед прыжком домой
+        if (renderer) renderer._setActiveComposer(null);
         zoomToFit(false);
     });
 
@@ -786,7 +795,6 @@ function bindEvents() {
                     document.getElementById('branch-timeline').style.display = isTimeline ? 'block' : 'none';
                     document.getElementById('branch-rating').style.display = !isTimeline ? 'block' : 'none';
                     
-                    // --- ИСПРАВЛЕНИЕ 1: Прячем ползунок масштаба в Рейтинге ---
                     const widthCtrl = document.getElementById('ctrl-width');
                     if (widthCtrl) {
                         widthCtrl.closest('.filter-group').style.display = isTimeline ? 'block' : 'none';
@@ -857,7 +865,6 @@ function bindEvents() {
                     searchInput.value = match.name;
                     searchResults.classList.remove('visible');
                     
-                    // 1. Принудительно убираем фокус с инпута, чтобы виртуальная клавиатура сразу начала скрываться
                     searchInput.blur();
 
                     if (appState.factsMode) toggleFactsMode();
@@ -879,14 +886,8 @@ function bindEvents() {
                         const targetX = store.layoutX[targetSoaIdx];
                         const targetY = store.layoutY[targetSoaIdx];
                         
-                        // 2. Проверяем, телефон ли это. На телефоне убираем смещение (offset),
-                        // чтобы композитор был ровно по центру экрана.
                         const isMobile = window.innerWidth <= 768;
                         const offset = appState.mainMode === 'timeline' ? (isMobile ? 0 : 200) : 0;
-                        
-                        // 3. Задержка старта. Если это мобилка, даем клавиатуре 350мс на закрытие,
-                        // чтобы Canvas пересчитал свою реальную высоту. Иначе полет произойдет 
-                        // с ошибкой центрирования. Для ПК (где нет клавиатуры) задержка 0.
                         const delay = isMobile ? 350 : 0;
                         
                         setTimeout(function() {
@@ -933,7 +934,6 @@ function bindEvents() {
         });
     });
 
-    // Добавляем переменные для отслеживания двойного тапа
     let lastCanvasTapTime = 0;
     let lastCanvasTapIdx = null;
 
@@ -955,22 +955,27 @@ function bindEvents() {
             }
             
             const now = performance.now();
-            // Считаем двойным тапом, если между кликами меньше 400 мс
             const isDoubleTap = (now - lastCanvasTapTime < 400);
             
             if (renderer.activeSoaIdx !== null) {
-                // Если это двойной тап по выделенному композитору — открываем карточку
                 if (isDoubleTap && lastCanvasTapIdx === renderer.activeSoaIdx) {
                     openComposerPopup(renderer.activeSoaIdx);
+                    
+                    // Плавный полет при двойном клике
+                    const targetX = store.layoutX[renderer.activeSoaIdx];
+                    const targetY = store.layoutY[renderer.activeSoaIdx];
+                    const isMobile = window.innerWidth <= 768;
+                    const offset = appState.mainMode === 'timeline' ? (isMobile ? 0 : 200) : 0;
+                    
+                    camera.flyTo(targetX + offset, targetY, 0.5);
+                    setHomeActive();
                 } else {
-                    // Если это одиночный тап (выделение), просто закрываем карточку если она была открыта
                     closeComposerPopup();
                 }
             } else {
                 closeComposerPopup();
             }
 
-            // Запоминаем текущий тап
             lastCanvasTapTime = now;
             lastCanvasTapIdx = renderer.activeSoaIdx;
         }, 0);
@@ -991,13 +996,12 @@ function toggleFactsMode() {
     renderer.showFacts = appState.factsMode;
     
     const btnFacts = document.getElementById('btn-toggle-facts');
-    const nav = document.getElementById('facts-nav'); // Получаем панель фактов
+    const nav = document.getElementById('facts-nav'); 
     
     if (appState.factsMode) {
         btnFacts.classList.add('active-btn');
-        nav.classList.add('visible'); // ИСПРАВЛЕНИЕ: Возвращаем панель на экран!
+        nav.classList.add('visible'); 
         
-        // Автоматически закрываем панели настроек при переходе в режим Фактов
         document.querySelectorAll('.dropdown-panel').forEach(function(p) { p.classList.remove('active-dropdown'); });
         document.querySelectorAll('.top-nav-btn[data-target]').forEach(function(b) { b.classList.remove('active-btn'); });
 
@@ -1008,7 +1012,7 @@ function toggleFactsMode() {
         }
     } else {
         btnFacts.classList.remove('active-btn');
-        nav.classList.remove('visible'); // Прячем панель фактов
+        nav.classList.remove('visible'); 
         hideFactCard();
         store.facts.forEach(function(f) { f.highlight = false; });
         renderer.requestRender();
@@ -1065,17 +1069,14 @@ function activateFact(index) {
 
     if (factTimeout) clearTimeout(factTimeout);
 
-    // Вызываем полет
     const ppy = LAYOUT_CONSTANTS.PIXELS_PER_YEAR;
     camera.flyTo(fact.year * ppy, 0, 0.8, 'epic');
     setHomeActive();
     
-    // === ИСПРАВЛЕНИЕ 2: Запускаем анимацию за 400мс до конца подлёта камеры ===
     const flightDuration = camera.flight ? camera.flight.duration : 0; 
     const earlyTriggerTime = Math.max(0, flightDuration - 800); 
     
     factTimeout = setTimeout(function() {
-        // Камера почти прилетела -> зажигаем точку
         store.facts.forEach(function(f, i) { f.highlight = (i === index); });
         renderer.requestRender();
 
@@ -1090,7 +1091,6 @@ function activateFact(index) {
 }
 
 function hideFactCard() {
-    // 1. Принудительно убиваем таймер, если он был запущен
     if (factTimeout) {
         clearTimeout(factTimeout);
         factTimeout = null;

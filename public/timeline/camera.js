@@ -29,6 +29,7 @@ export class Camera {
         };
 
         this.isDragging = false;
+        this.isPointerDown = false;
         this.lastDragTime = 0;
         this.lastPointer = { x: 0, y: 0 };
         this.pointers = new Map();
@@ -85,7 +86,6 @@ export class Camera {
         };
     }
 
-    // ИСПРАВЛЕНИЕ: Добавлен параметр flightMode ('epic' или 'normal')
     flyTo(targetX, targetY, targetScale, flightMode) {
         const rect = this.canvas.getBoundingClientRect();
         const screenCenterX = rect.width / 2;
@@ -109,12 +109,9 @@ export class Camera {
         
         let cinematicDuration;
         
-        // ИСПРАВЛЕНИЕ: Разделение скоростей полета
         if (flightMode === 'epic') {
-            // Длинные медленные пролеты для просмотра фактов
             cinematicDuration = 1500 + Math.min((distance + scaleDiff) * 0.24, 6000);
         } else {
-            // Быстрые, отзывчивые перемещения (Домой, Поиск)
             cinematicDuration = 1000 + Math.min((distance + scaleDiff) * 0.08, 2000);
         }
 
@@ -209,7 +206,8 @@ export class Camera {
         this.canvas.setPointerCapture(e.pointerId);
         
         const pos = this._getEventPos(e);
-        this.isDragging = true;
+        this.isPointerDown = true;
+        this.isDragging = false;
         this.flight = null;
         this.vx = 0; 
         this.vy = 0;
@@ -219,32 +217,42 @@ export class Camera {
     }
 
     _onPointerMove(e) {
-        if (!this.isDragging || e.pointerType === 'touch') return;
+        if (!this.isPointerDown || e.pointerType === 'touch') return;
 
         const pos = this._getEventPos(e);
-        const now = performance.now();
-        const dt = now - this.lastDragTime;
-
         const dx = pos.x - this.lastPointer.x;
         const dy = pos.y - this.lastPointer.y;
 
-        this.x += dx;
-        this.y += dy;
-        this.clamp();
-
-        if (dt > 0) {
-            this.vx = dx / dt;
-            this.vy = dy / dt;
+        if (!this.isDragging && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+            this.isDragging = true;
         }
 
-        this.lastPointer = pos;
-        this.lastDragTime = now;
-        this.requestRender();
+        if (this.isDragging) {
+            const now = performance.now();
+            const dt = now - this.lastDragTime;
+
+            this.x += dx;
+            this.y += dy;
+            this.clamp();
+
+            if (dt > 0) {
+                this.vx = dx / dt;
+                this.vy = dy / dt;
+            }
+
+            this.lastPointer = pos;
+            this.lastDragTime = now;
+            this.requestRender();
+        }
     }
 
     _onPointerUp(e) {
-        if (!this.isDragging || e.pointerType === 'touch') return;
-        this.isDragging = false;
+        if (!this.isPointerDown || e.pointerType === 'touch') return;
+        this.isPointerDown = false;
+        
+        if (this.isDragging) {
+            setTimeout(() => { this.isDragging = false; }, 50);
+        }
         
         if (performance.now() - this.lastDragTime > 50) {
             this.vx = 0;
@@ -259,7 +267,6 @@ export class Camera {
         this.flight = null;
 
         const pos = this._getEventPos(e);
-        // Тачпад при щипке отдает ctrlKey = true. Делаем для него зум мягче.
         const zoomIntensity = e.ctrlKey ? 0.01 : 0.002;
         const delta = -e.deltaY;
         const scaleFactor = Math.exp(delta * zoomIntensity);
@@ -268,17 +275,25 @@ export class Camera {
     }
 
     _onTouch(e) {
-        e.preventDefault();
-        this.flight = null;
+        // Оставляем preventDefault только для мультитач и движений, чтобы дать браузеру кликнуть
+        if (e.type === 'touchmove' || (e.touches && e.touches.length > 1)) {
+            if (e.cancelable) e.preventDefault();
+        }
+
+        if (e.type === 'touchstart' || e.type === 'touchmove') {
+            this.flight = null;
+        }
 
         if (e.type === 'touchstart') {
             this.vx = 0; 
             this.vy = 0;
             if (e.touches.length === 1) {
-                this.isDragging = true;
+                this.isPointerDown = true;
+                this.isDragging = false;
                 this.lastPointer = this._getEventPos(e.touches[0]);
                 this.lastDragTime = performance.now();
             } else if (e.touches.length === 2) {
+                this.isPointerDown = false;
                 this.isDragging = false;
                 this.initialPinchDistance = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
@@ -286,7 +301,6 @@ export class Camera {
                 );
                 this.initialScale = this.scale;
                 
-                // Запоминаем стартовый центр между двумя пальцами
                 const rect = this.canvas.getBoundingClientRect();
                 this.lastPinchCenter = {
                     x: (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left,
@@ -296,27 +310,36 @@ export class Camera {
         }
 
         if (e.type === 'touchmove') {
-            if (this.isDragging && e.touches.length === 1) {
+            if (e.touches.length === 1 && this.isPointerDown) {
                 const pos = this._getEventPos(e.touches[0]);
-                const now = performance.now();
-                const dt = now - this.lastDragTime;
-                
                 const dx = pos.x - this.lastPointer.x;
                 const dy = pos.y - this.lastPointer.y;
-
-                this.x += dx; 
-                this.y += dy;
-                this.clamp();
                 
-                if (dt > 0) {
-                    this.vx = dx / dt; 
-                    this.vy = dy / dt;
+                // Если палец сдвинулся, активируем режим Drag
+                if (!this.isDragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+                    this.isDragging = true;
                 }
 
-                this.lastPointer = pos;
-                this.lastDragTime = now;
-                this.requestRender();
+                if (this.isDragging) {
+                    const now = performance.now();
+                    const dt = now - this.lastDragTime;
+                    
+                    this.x += dx; 
+                    this.y += dy;
+                    this.clamp();
+                    
+                    if (dt > 0) {
+                        this.vx = dx / dt; 
+                        this.vy = dy / dt;
+                    }
+
+                    this.lastPointer = pos;
+                    this.lastDragTime = now;
+                    this.requestRender();
+                }
             } else if (e.touches.length === 2) {
+                this.isPointerDown = false;
+                this.isDragging = false;
                 const centerClientX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const centerClientY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
                 
@@ -324,13 +347,11 @@ export class Camera {
                 const centerX = centerClientX - rect.left;
                 const centerY = centerClientY - rect.top;
 
-                // 1. ПАНОРАМИРОВАНИЕ: Сдвигаем камеру за смещением центра пальцев
                 if (this.lastPinchCenter) {
                     this.x += centerX - this.lastPinchCenter.x;
                     this.y += centerY - this.lastPinchCenter.y;
                 }
 
-                // 2. ЗУМ: Меняем масштаб относительно нового центра
                 const currentDistance = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
@@ -353,7 +374,13 @@ export class Camera {
         if (e.type === 'touchend' || e.type === 'touchcancel') {
             this.lastPinchCenter = null;
             if (e.touches.length === 0) {
-                this.isDragging = false;
+                this.isPointerDown = false;
+                
+                if (this.isDragging) {
+                    // Откладываем сброс драга на 50мс, чтобы дать click() понять, что был драг
+                    setTimeout(() => { this.isDragging = false; }, 50);
+                }
+                
                 if (performance.now() - this.lastDragTime > 50) {
                     this.vx = 0; 
                     this.vy = 0;
@@ -361,7 +388,8 @@ export class Camera {
                     this.requestRender();
                 }
             } else if (e.touches.length === 1) {
-                this.isDragging = true;
+                this.isPointerDown = true;
+                this.isDragging = false;
                 this.lastPointer = this._getEventPos(e.touches[0]);
                 this.lastDragTime = performance.now();
             }

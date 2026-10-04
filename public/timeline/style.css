@@ -132,12 +132,66 @@ input[type="range"]:not(.dual-slider-wrapper input) { width: 100%; accent-color:
 /* =========================================
    АДАПТАЦИЯ (МОБИЛЬНАЯ ВЕРСИЯ)
    ========================================= */
-@media (max-width: 768px) { 
-    :root { --ui-size: 2.5rem; }
-    #top-bar-inner { justify-content: space-between; padding: 0.25rem 0.5rem; }
-    .top-bar-title { display: none; }
-    .search-container { min-width: 0; flex-grow: 1; max-width: none; margin: 0 0.5rem; }
-    .dropdown-panel { max-width: 100%; top: 5.5rem; border-left: none; border-right: none; border-radius: 0; }
+@media (max-width: 600px) { /* Уменьшили порог срабатывания с 768px до 600px */
+    :root { --ui-size: 2.1rem; } 
+    
+    #top-bar-inner { 
+        flex-wrap: nowrap; 
+        padding: 0.4rem 0.4rem; 
+        gap: 0.3rem; 
+        justify-content: flex-start; 
+        max-width: none;
+        margin: 0;
+    }
+    
+    .top-bar-title { 
+        display: flex;
+        align-items: center;
+        font-size: 0; /* Скрываем длинное слово */
+        padding: 0 0.5rem;
+        min-width: auto;
+        border: var(--border);
+        order: 2; 
+    }
+    
+    /* Добавляем букву "К:" перед числом */
+    .top-bar-title::before {
+        content: "К: ";
+        font-size: 0.8rem;
+        color: var(--c-t80);
+        margin-right: 0.2rem;
+        font-weight: 600;
+    }
+    
+    #total-count { 
+        font-size: 0.8rem; 
+        line-height: var(--ui-size);
+    }
+
+    #btn-jump-composers { order: 1; }
+    button[data-target="drop-filters"] { order: 3; }
+    button[data-target="drop-appearance"] { order: 4; }
+    #btn-toggle-facts { order: 5; }
+    
+    .search-container { 
+        order: 6; 
+        flex: 1 1 0; 
+        min-width: 60px; 
+        max-width: none; 
+        margin: 0;
+    }
+    
+    #ctrl-search {
+        padding: 0 0.5rem; 
+    }
+    
+    .dropdown-panel { 
+        max-width: 100%; 
+        top: 3.2rem; 
+        border-left: none; 
+        border-right: none; 
+        border-radius: 0; 
+    }
     
     #facts-nav { bottom: 0; width: 100%; left: 0; transform: none !important; border-radius: 0; border-left: none; border-right: none; border-bottom: none; }
     #fact-info-display { min-width: 0; flex-grow: 1; font-size: 0.6rem; padding: 0; }

@@ -52,9 +52,8 @@ export class Renderer {
                 const el = document.createElement('div');
                 el.className = 'dom-date-tick';
                 
-                // ИСПРАВЛЕНИЕ: Держим элемент всегда в DOM, прячем только через прозрачность
                 el.style.opacity = '0';
-                el.style.transition = 'opacity 0.4s ease'; // Плавный фейд
+                el.style.transition = 'opacity 0.4s ease';
                 el.style.pointerEvents = 'none';
                 el.style.display = 'flex'; 
                 
@@ -77,7 +76,7 @@ export class Renderer {
         let foundIdx = null;
         for (let i = 0; i < store.filteredCount; i++) {
             const inst = store.filteredItems[i];
-            const item = store.getRawItemBySoaIdx(inst.soaIdx); // ИСПРАВЛЕНО
+            const item = store.getRawItemBySoaIdx(inst.soaIdx);
             if (item.id === id) {
                 foundIdx = inst.soaIdx;
                 break;
@@ -89,8 +88,6 @@ export class Renderer {
     _setActiveComposer(soaIdx) {
         if (this.activeSoaIdx === soaIdx) return;
         this.activeSoaIdx = soaIdx;
-        // Нам не нужно запускать отдельные аниматоры - Render Loop сам плавно 
-        // сдвигает currentAlphas к нужным значениям. Просто просим кадр.
         this.requestRender();
     }
 
@@ -132,6 +129,9 @@ export class Renderer {
     }
 
     _handleClick(e) {
+        // Блокируем клик на композиторах, если мы в процессе перетаскивания (драга)
+        if (this.camera.isDragging) return; 
+
         const rect = this.canvas.getBoundingClientRect();
         const sx = e.clientX - rect.left;
         const sy = e.clientY - rect.top;
@@ -142,7 +142,6 @@ export class Renderer {
 
         const hitIdx = spatialIndex.hitTest(world.x, world.y);
         if (hitIdx !== null) {
-            // УБРАНО: Сброс при повторном клике, чтобы работал двойной тап
             this._setActiveComposer(hitIdx); 
         } else {
             this._setActiveComposer(null);
@@ -155,7 +154,7 @@ export class Renderer {
         let dynamicRadius = 8 * Math.pow(scale, 0.4);
         dynamicRadius = Math.max(2, Math.min(dynamicRadius, 15));
         const hitRadius = (dynamicRadius + 8) / scale; 
-        const screenOffset = dynamicRadius * 2.5; // Расстояние между фактами
+        const screenOffset = dynamicRadius * 2.5; 
 
         const ppy = LAYOUT_CONSTANTS.PIXELS_PER_YEAR;
         for (let i = 0; i < store.facts.length; i++) {
@@ -163,7 +162,6 @@ export class Renderer {
             const fx = fact.year * ppy;
             
             if (Math.abs(worldX - fx) < hitRadius) {
-                // Проверяем Y координату с учетом смещения
                 const fy = equatorY + ((fact.yOffsetMult * screenOffset) / scale);
                 if (Math.abs(worldY - fy) < hitRadius) {
                     return fact;
@@ -180,8 +178,6 @@ export class Renderer {
         if (dt > 100) dt = 16; 
         this.lastTime = time;
 
-        // ИСПРАВЛЕНИЕ: Заливаем нулями, чтобы при загрузке страницы
-        // все композиторы плавно "проявились" из темноты
         if (!this.currentAlphas || this.currentAlphas.length < store.capacity) {
             const newAlphas = new Float32Array(store.capacity);
             newAlphas.fill(0.0); 
@@ -192,7 +188,6 @@ export class Renderer {
         let isAlphaAnimating = false;
         const activeComposer = this.activeSoaIdx !== null ? store.getRawItemBySoaIdx(this.activeSoaIdx) : null;
         
-        // Делаем шаг альфы чуть быстрее (было 0.002, станет ~250ms на полное затухание)
         const alphaStep = 0.004 * dt;
         const factAnimStep = dt / 150; 
         let isFactAnimating = false;
@@ -210,8 +205,8 @@ export class Renderer {
 
         for (let i = 0; i < store.filteredCount; i++) {
             const inst = store.filteredItems[i];
-            const soaIdx = inst.soaIdx; // ИСПРАВЛЕНО
-            const item = store.getRawItemBySoaIdx(soaIdx); // ИСПРАВЛЕНО
+            const soaIdx = inst.soaIdx; 
+            const item = store.getRawItemBySoaIdx(soaIdx); 
             let targetAlpha = 1.0;
 
             if (activeComposer && soaIdx !== this.activeSoaIdx) {
@@ -234,7 +229,7 @@ export class Renderer {
         const moveFactor = Math.min(dt * 0.015, 1.0); 
 
         for (let i = 0; i < store.filteredCount; i++) {
-            const soaIdx = store.filteredItems[i].soaIdx; // ИСПРАВЛЕНО
+            const soaIdx = store.filteredItems[i].soaIdx; 
             const dx = store.layoutX[soaIdx] - store.animX[soaIdx];
             const dy = store.layoutY[soaIdx] - store.animY[soaIdx];
             const dw = store.layoutW[soaIdx] - store.animW[soaIdx];
@@ -297,7 +292,6 @@ export class Renderer {
         if (this.currentMode === 'timeline') {
             this._updateDOMDates(minX, maxX, s);
         } else {
-            // Растворяем даты, если мы переключились в Рейтинг
             for (let i = 0; i < this.dateElements.length; i++) {
                 if (this.dateElements[i].style.opacity !== '0') {
                     this.dateElements[i].style.opacity = '0';
@@ -392,7 +386,6 @@ export class Renderer {
 
             if (shouldDrawText) {
                 if (this.currentMode === 'rating') {
-                    // ИСПРАВЛЕНИЕ ТУТ: Читаем из нового массива
                     const rank = store.ranks[soaIdx] + 1; 
                     
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
@@ -589,7 +582,6 @@ export class Renderer {
             
             el.style.transform = 'translateX(' + screenX + 'px)';
             
-            // ИСПРАВЛЕНИЕ: Мягко проявляем дату
             if (el.style.opacity !== '1') {
                 el.style.opacity = '1';
             }
@@ -598,7 +590,6 @@ export class Renderer {
         
         while (elIdx < this.dateElements.length) {
             const el = this.dateElements[elIdx];
-            // ИСПРАВЛЕНИЕ: Мягко растворяем ненужные даты
             if (el.style.opacity !== '0') {
                 el.style.opacity = '0';
             }
@@ -622,7 +613,6 @@ export class Renderer {
             dynamicRadius = Math.max(2, Math.min(dynamicRadius, 15)); 
             const screenOffset = dynamicRadius * 2.5;
 
-            // 1. Рисуем соединительные линии к экватору для смещенных фактов
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.lineWidth = 1 / scale;
             ctx.beginPath();
@@ -639,7 +629,6 @@ export class Renderer {
             }
             ctx.stroke();
 
-            // 2. Рисуем сами кружки фактов поверх линий
             for (let i = 0; i < store.facts.length; i++) {
                 const fact = store.facts[i];
                 const fx = fact.year * ppy;
