@@ -259,7 +259,8 @@ export class Camera {
         this.flight = null;
 
         const pos = this._getEventPos(e);
-        const zoomIntensity = 0.002;
+        // Тачпад при щипке отдает ctrlKey = true. Делаем для него зум мягче.
+        const zoomIntensity = e.ctrlKey ? 0.01 : 0.002;
         const delta = -e.deltaY;
         const scaleFactor = Math.exp(delta * zoomIntensity);
         
@@ -284,6 +285,13 @@ export class Camera {
                     e.touches[0].clientY - e.touches[1].clientY
                 );
                 this.initialScale = this.scale;
+                
+                // Запоминаем стартовый центр между двумя пальцами
+                const rect = this.canvas.getBoundingClientRect();
+                this.lastPinchCenter = {
+                    x: (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left,
+                    y: (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top
+                };
             }
         }
 
@@ -309,17 +317,24 @@ export class Camera {
                 this.lastDragTime = now;
                 this.requestRender();
             } else if (e.touches.length === 2) {
-                const currentDistance = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-
                 const centerClientX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const centerClientY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
                 
                 const rect = this.canvas.getBoundingClientRect();
                 const centerX = centerClientX - rect.left;
                 const centerY = centerClientY - rect.top;
+
+                // 1. ПАНОРАМИРОВАНИЕ: Сдвигаем камеру за смещением центра пальцев
+                if (this.lastPinchCenter) {
+                    this.x += centerX - this.lastPinchCenter.x;
+                    this.y += centerY - this.lastPinchCenter.y;
+                }
+
+                // 2. ЗУМ: Меняем масштаб относительно нового центра
+                const currentDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
 
                 const scaleFactor = currentDistance / this.initialPinchDistance;
                 const newScale = clampVal(this.initialScale * scaleFactor, this.minScale, this.maxScale);
@@ -330,11 +345,13 @@ export class Camera {
                 this.scale = newScale;
                 this.clamp();
 
+                this.lastPinchCenter = { x: centerX, y: centerY };
                 this.requestRender();
             }
         }
 
         if (e.type === 'touchend' || e.type === 'touchcancel') {
+            this.lastPinchCenter = null;
             if (e.touches.length === 0) {
                 this.isDragging = false;
                 if (performance.now() - this.lastDragTime > 50) {

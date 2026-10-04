@@ -376,8 +376,9 @@ function buildDynamicCheckboxes() {
         
         if (opts.isMaster) {
             const toggle = document.createElement('span');
-            toggle.className = 'collapse-toggle';
-            toggle.textContent = '▶';
+            // Добавляем класс 'collapsed' сразу, чтобы CSS повернул иконку вправо
+            toggle.className = 'collapse-toggle collapsed'; 
+            toggle.textContent = '▼'; // Используем иконку вниз как базовую
             
             toggle.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -385,7 +386,8 @@ function buildDynamicCheckboxes() {
                 const targetDiv = document.getElementById('sub-' + opts.groupId);
                 if (targetDiv) {
                     targetDiv.classList.toggle('collapsed-group');
-                    toggle.textContent = targetDiv.classList.contains('collapsed-group') ? '▶' : '▼';
+                    // Вместо замены текста переключаем класс, чтобы сработала плавная CSS-анимация
+                    toggle.classList.toggle('collapsed');
                 }
             });
             
@@ -855,7 +857,10 @@ function bindEvents() {
                     searchInput.value = match.name;
                     searchResults.classList.remove('visible');
                     
-                    if (appState.factsMode) toggleFactsMode(); 
+                    // 1. Принудительно убираем фокус с инпута, чтобы виртуальная клавиатура сразу начала скрываться
+                    searchInput.blur();
+
+                    if (appState.factsMode) toggleFactsMode();
                     
                     let targetSoaIdx = -1;
                     for (let i = 0; i < store.filteredCount; i++) {
@@ -873,10 +878,21 @@ function bindEvents() {
                         
                         const targetX = store.layoutX[targetSoaIdx];
                         const targetY = store.layoutY[targetSoaIdx];
-                        const offset = appState.mainMode === 'timeline' ? 200 : 0;
                         
-                        camera.flyTo(targetX + offset, targetY, 0.5); // Быстрый полет к композитору
-                        setHomeActive();
+                        // 2. Проверяем, телефон ли это. На телефоне убираем смещение (offset),
+                        // чтобы композитор был ровно по центру экрана.
+                        const isMobile = window.innerWidth <= 768;
+                        const offset = appState.mainMode === 'timeline' ? (isMobile ? 0 : 200) : 0;
+                        
+                        // 3. Задержка старта. Если это мобилка, даем клавиатуре 350мс на закрытие,
+                        // чтобы Canvas пересчитал свою реальную высоту. Иначе полет произойдет 
+                        // с ошибкой центрирования. Для ПК (где нет клавиатуры) задержка 0.
+                        const delay = isMobile ? 350 : 0;
+                        
+                        setTimeout(function() {
+                            camera.flyTo(targetX + offset, targetY, 0.5);
+                            setHomeActive();
+                        }, delay);
                     }
                 });
                 searchResults.appendChild(div);
@@ -917,6 +933,10 @@ function bindEvents() {
         });
     });
 
+    // Добавляем переменные для отслеживания двойного тапа
+    let lastCanvasTapTime = 0;
+    let lastCanvasTapIdx = null;
+
     renderer.canvas.addEventListener('click', function(e) {
         if (camera.isDragging) return; 
         
@@ -934,11 +954,25 @@ function bindEvents() {
                 }
             }
             
+            const now = performance.now();
+            // Считаем двойным тапом, если между кликами меньше 400 мс
+            const isDoubleTap = (now - lastCanvasTapTime < 400);
+            
             if (renderer.activeSoaIdx !== null) {
-                openComposerPopup(renderer.activeSoaIdx);
+                // Если это двойной тап по выделенному композитору — открываем карточку
+                if (isDoubleTap && lastCanvasTapIdx === renderer.activeSoaIdx) {
+                    openComposerPopup(renderer.activeSoaIdx);
+                } else {
+                    // Если это одиночный тап (выделение), просто закрываем карточку если она была открыта
+                    closeComposerPopup();
+                }
             } else {
                 closeComposerPopup();
             }
+
+            // Запоминаем текущий тап
+            lastCanvasTapTime = now;
+            lastCanvasTapIdx = renderer.activeSoaIdx;
         }, 0);
     });
 
@@ -1056,9 +1090,17 @@ function activateFact(index) {
 }
 
 function hideFactCard() {
+    // 1. Принудительно убиваем таймер, если он был запущен
+    if (factTimeout) {
+        clearTimeout(factTimeout);
+        factTimeout = null;
+    }
+    
     const card = document.getElementById('fact-card');
-    card.style.transition = 'opacity 0.2s ease, transform 0.2s ease'; 
-    card.classList.remove('visible');
+    if (card) {
+        card.style.transition = 'opacity 0.2s ease, transform 0.2s ease'; 
+        card.classList.remove('visible');
+    }
 }
 
 function zoomToFit(mode) {

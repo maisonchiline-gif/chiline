@@ -84,8 +84,8 @@ html, body { margin: 0; padding: 0; width: 100%; height: 100dvh; overflow: hidde
 .checkbox-label input { margin-right: 0.625rem; cursor: pointer; accent-color: var(--c-accent); }
 .collapse-toggle { display: inline-block; transition: transform 0.3s ease; margin-right: 6px; font-size: 12px; transform-origin: center; }
 .collapse-toggle.collapsed { transform: rotate(-90deg); }
-div[id^="sub-"] { max-height: 1000px; overflow: hidden; opacity: 1; transition: max-height 0.1s ease-in-out, opacity 0.1s ease-in-out; }
-.collapsed-group { max-height: 0; opacity: 0; pointer-events: none; }
+div[id^="sub-"] { max-height: 1000px; overflow: hidden; opacity: 1; transition: max-height 0.2s ease-in-out, opacity 0.2s ease-in-out; }
+div[id^="sub-"].collapsed-group { max-height: 0; opacity: 0; pointer-events: none; }
 
 /* Ползунки (Range) */
 .dual-slider-wrapper { position: relative; width: 100%; height: 1.875rem; margin-top: 0.3rem; }

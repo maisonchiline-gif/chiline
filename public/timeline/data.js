@@ -7,7 +7,7 @@
 const CURRENT_YEAR = new Date().getFullYear();
 
 const ERA_COLORS = { "Средневековье": "#5d4037", "Возрождение": "#d84315", "барокко": "#f9a825", "классицизм": "#2e7d32", "ранний романтизм": "#00838f", "зрелый романтизм": "#00678f", "поздний романтизм": "#004a8f", "XX век": "#4527a0", "авангард": "#c62828"};
-const COUNTRY_COLORS = { "Германия": "#b17719", "Австрия": "#f9a825", "франция": "#1565c0", "италия": "#d84315", "россия": "#2e7d32", "великобритания": "#9467bd", "Польша": "#8c564b", "США": "#e377c2", "чехия": "#7f7f7f", "испания": "#bcbd22", "венгрия": "#7f7f7f", "финляндия": "#7f7f7f", "норвегия": "#7f7f7f", "Другое": "#7f7f7f" };
+const COUNTRY_COLORS = { "Германия": "#b17719", "Австрия": "#f9a825", "франция": "#1565c0","нидерланды": "#0d3a6e", "италия": "#d84315", "россия": "#2e7d32", "великобритания": "#9467bd", "Польша": "#8c564b", "США": "#e377c2", "чехия": "#60703a", "испания": "#bcbd22", "Другое": "#7f7f7f" };
 
 const Utils = {
     parseCSV: function(str) {
@@ -114,6 +114,32 @@ class DataStore {
         try {
             this.facts = JSON.parse(factsJsonText);
             this.facts.sort(function(a, b) { return b.year - a.year; });
+            
+            // --- НОВАЯ ЛОГИКА: Расчет смещения для фактов, попавших на один год ---
+            const yearCounts = {};
+            for(let i = 0; i < this.facts.length; i++) {
+                const y = this.facts[i].year;
+                yearCounts[y] = (yearCounts[y] || 0) + 1;
+            }
+            
+            const yearIndex = {};
+            for(let i = 0; i < this.facts.length; i++) {
+                const y = this.facts[i].year;
+                yearIndex[y] = (yearIndex[y] || 0);
+                
+                const count = yearCounts[y];
+                const idx = yearIndex[y];
+                
+                if (count === 1) {
+                    this.facts[i].yOffsetMult = 0; // Факт один — ставим по центру
+                } else {
+                    // Раскидываем симметрично: -1 (вверх), +1 (вниз), -2, +2 и т.д.
+                    const step = Math.floor(idx / 2) + 1;
+                    const sign = (idx % 2 === 0) ? -1 : 1; 
+                    this.facts[i].yOffsetMult = sign * step;
+                }
+                yearIndex[y]++;
+            }
         } catch (e) {
             console.error("Ошибка парсинга фактов:", e);
         }

@@ -97,11 +97,12 @@ class LayoutEngine {
             }
 
             let instanceOffset = 0;
+            // Массив для защиты от дублей (если композитор родом и из Франции, и из Нидерландов одновременно)
+            let processedGroups = [];
+
             for (let g = 0; g < groupsToRender.length; g++) {
-                const grp = groupsToRender[g];
+                const grp = groupsToRender[g]; // Оригинальная страна (например, 'Германия')
                 
-                // В режиме группировки дополнительно отсеиваем конкретные блоки, 
-                // но только если фильтр этой категории активен (size > 0)
                 if (filterMode === 'era') {
                     if (allowedEras.size > 0 && !allowedEras.has(grp)) continue;
                     if (!hasValidCountry) continue;
@@ -112,16 +113,31 @@ class LayoutEngine {
                     if (!hasValidEra) continue;
                 }
 
+                // 1. ОПРЕДЕЛЯЕМ ИМЯ ГРУППЫ ДЛЯ ОТРИСОВКИ (ОБЪЕДИНЕНИЕ)
+                let layoutGroupName = grp;
+                if (filterMode === 'country') {
+                    // Превращает 'Германия' и 'Австрия' в единую строку 'Австрия и Германия'
+                    layoutGroupName = Utils.getBaseGroup(grp);
+                }
+
+                // 2. ИСКЛЮЧАЕМ ДУБЛИКАТЫ ВНУТРИ ОБЪЕДИНЕННОЙ ГРУППЫ
+                if (filterMode !== 'none' && processedGroups.indexOf(layoutGroupName) !== -1) {
+                    continue; 
+                }
+                processedGroups.push(layoutGroupName);
+
                 const soaIdx = item.soaBaseIdx + instanceOffset;
                 
                 filtered.push({
                     rawIdx: i,
                     soaIdx: soaIdx,
-                    group: grp
+                    group: layoutGroupName // Укладываем в объединенную дорожку
                 });
                 
+                // 3. КРАСИМ ПО ОРИГИНАЛЬНОМУ НАЗВАНИЮ
                 let color = '#7f7f7f';
                 if (config.colorMode === 'country') {
+                    // Используем grp ('Германия', 'Франция'), а не layoutGroupName!
                     color = filterMode === 'country' ? Utils.getColor('country', grp) : Utils.getColor('country', item.primaryGroup);
                 } else {
                     color = filterMode === 'era' ? Utils.getColor('era', grp) : Utils.getColor('era', item.parsedEras[0]);

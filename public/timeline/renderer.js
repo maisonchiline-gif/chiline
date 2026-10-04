@@ -51,7 +51,13 @@ export class Renderer {
             for (let i = 0; i < 30; i++) {
                 const el = document.createElement('div');
                 el.className = 'dom-date-tick';
-                el.style.display = 'none';
+                
+                // ИСПРАВЛЕНИЕ: Держим элемент всегда в DOM, прячем только через прозрачность
+                el.style.opacity = '0';
+                el.style.transition = 'opacity 0.4s ease'; // Плавный фейд
+                el.style.pointerEvents = 'none';
+                el.style.display = 'flex'; 
+                
                 el._lastYear = null; 
                 this.dateAxisContainer.appendChild(el);
                 this.dateElements.push(el);
@@ -83,16 +89,9 @@ export class Renderer {
     _setActiveComposer(soaIdx) {
         if (this.activeSoaIdx === soaIdx) return;
         this.activeSoaIdx = soaIdx;
-        if (soaIdx !== null) {
-            this._startAlphaAnim(this.nonContempAlpha, 0.15, 600);
-        } else {
-            this._startAlphaAnim(this.nonContempAlpha, 0.15, 600);
-        }
-    }
-
-    _startAlphaAnim(startVal, targetVal, durationMs) {
-        this.alphaAnim = { start: startVal, target: targetVal, startTime: performance.now(), duration: durationMs };
-        this.requestRender(); 
+        // Нам не нужно запускать отдельные аниматоры - Render Loop сам плавно 
+        // сдвигает currentAlphas к нужным значениям. Просто просим кадр.
+        this.requestRender();
     }
 
     _handleResize(entries) {
@@ -109,6 +108,13 @@ export class Renderer {
     requestRender() { this.needsRender = true; }
 
     _handlePointerMove(e) {
+        if (e.pointerType === 'touch') {
+            if (this.hoveredSoaIdx !== null) {
+                this.hoveredSoaIdx = null;
+                this.requestRender();
+            }
+            return;
+        }
         const rect = this.canvas.getBoundingClientRect();
         const sx = e.clientX - rect.left;
         const sy = e.clientY - rect.top;
@@ -136,8 +142,8 @@ export class Renderer {
 
         const hitIdx = spatialIndex.hitTest(world.x, world.y);
         if (hitIdx !== null) {
-            if (this.activeSoaIdx === hitIdx) this._setActiveComposer(null);
-            else this._setActiveComposer(hitIdx);
+            // УБРАНО: Сброс при повторном клике, чтобы работал двойной тап
+            this._setActiveComposer(hitIdx); 
         } else {
             this._setActiveComposer(null);
         }
@@ -149,14 +155,20 @@ export class Renderer {
         let dynamicRadius = 8 * Math.pow(scale, 0.4);
         dynamicRadius = Math.max(2, Math.min(dynamicRadius, 15));
         const hitRadius = (dynamicRadius + 8) / scale; 
-        
-        if (Math.abs(worldY - equatorY) > hitRadius) return null;
+        const screenOffset = dynamicRadius * 2.5; // Расстояние между фактами
 
         const ppy = LAYOUT_CONSTANTS.PIXELS_PER_YEAR;
         for (let i = 0; i < store.facts.length; i++) {
             const fact = store.facts[i];
             const fx = fact.year * ppy;
-            if (Math.abs(worldX - fx) < hitRadius) return fact;
+            
+            if (Math.abs(worldX - fx) < hitRadius) {
+                // Проверяем Y координату с учетом смещения
+                const fy = equatorY + ((fact.yOffsetMult * screenOffset) / scale);
+                if (Math.abs(worldY - fy) < hitRadius) {
+                    return fact;
+                }
+            }
         }
         return null;
     }
@@ -168,19 +180,20 @@ export class Renderer {
         if (dt > 100) dt = 16; 
         this.lastTime = time;
 
+        // ИСПРАВЛЕНИЕ: Заливаем нулями, чтобы при загрузке страницы
+        // все композиторы плавно "проявились" из темноты
         if (!this.currentAlphas || this.currentAlphas.length < store.capacity) {
             const newAlphas = new Float32Array(store.capacity);
-            newAlphas.fill(1.0);
+            newAlphas.fill(0.0); 
             if (this.currentAlphas) newAlphas.set(this.currentAlphas);
             this.currentAlphas = newAlphas;
         }
 
         let isAlphaAnimating = false;
-        
-        // ИСПРАВЛЕНО: Получаем оригинал
         const activeComposer = this.activeSoaIdx !== null ? store.getRawItemBySoaIdx(this.activeSoaIdx) : null;
         
-        const alphaStep = 0.002 * dt;
+        // Делаем шаг альфы чуть быстрее (было 0.002, станет ~250ms на полное затухание)
+        const alphaStep = 0.004 * dt;
         const factAnimStep = dt / 150; 
         let isFactAnimating = false;
 
@@ -284,9 +297,10 @@ export class Renderer {
         if (this.currentMode === 'timeline') {
             this._updateDOMDates(minX, maxX, s);
         } else {
+            // Растворяем даты, если мы переключились в Рейтинг
             for (let i = 0; i < this.dateElements.length; i++) {
-                if (this.dateElements[i].style.display !== 'none') {
-                    this.dateElements[i].style.display = 'none';
+                if (this.dateElements[i].style.opacity !== '0') {
+                    this.dateElements[i].style.opacity = '0';
                 }
             }
         }
@@ -566,7 +580,6 @@ export class Renderer {
             
             const wx = y * ppy;
             const screenX = (wx - minX) * scale;
-            
             const el = this.dateElements[elIdx];
             
             if (el._lastYear !== y) {
@@ -576,14 +589,18 @@ export class Renderer {
             
             el.style.transform = 'translateX(' + screenX + 'px)';
             
-            if (el.style.display !== 'flex') el.style.display = 'flex';
+            // ИСПРАВЛЕНИЕ: Мягко проявляем дату
+            if (el.style.opacity !== '1') {
+                el.style.opacity = '1';
+            }
             elIdx++;
         }
         
         while (elIdx < this.dateElements.length) {
             const el = this.dateElements[elIdx];
-            if (el.style.display !== 'none') {
-                el.style.display = 'none';
+            // ИСПРАВЛЕНИЕ: Мягко растворяем ненужные даты
+            if (el.style.opacity !== '0') {
+                el.style.opacity = '0';
             }
             elIdx++;
         }
@@ -603,15 +620,36 @@ export class Renderer {
         if (this.showFacts) {
             let dynamicRadius = 8 * Math.pow(scale, 0.4);
             dynamicRadius = Math.max(2, Math.min(dynamicRadius, 15)); 
+            const screenOffset = dynamicRadius * 2.5;
 
+            // 1. Рисуем соединительные линии к экватору для смещенных фактов
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1 / scale;
+            ctx.beginPath();
+            for (let i = 0; i < store.facts.length; i++) {
+                const fact = store.facts[i];
+                if (fact.yOffsetMult === 0) continue;
+                
+                const fx = fact.year * ppy;
+                if (fx < minX || fx > maxX) continue;
+
+                const fy = equatorY + ((fact.yOffsetMult * screenOffset) / scale);
+                ctx.moveTo(fx, equatorY);
+                ctx.lineTo(fx, fy);
+            }
+            ctx.stroke();
+
+            // 2. Рисуем сами кружки фактов поверх линий
             for (let i = 0; i < store.facts.length; i++) {
                 const fact = store.facts[i];
                 const fx = fact.year * ppy;
                 
                 if (fx < minX || fx > maxX) continue;
 
+                const fy = equatorY + ((fact.yOffsetMult * screenOffset) / scale);
+
                 ctx.save();
-                ctx.translate(fx, equatorY);
+                ctx.translate(fx, fy);
                 ctx.scale(1 / scale, 1 / scale);
 
                 ctx.beginPath();
@@ -675,7 +713,9 @@ export class Renderer {
 
     _getYearStep(scale) {
         const ppy = LAYOUT_CONSTANTS.PIXELS_PER_YEAR;
-        const idealYearsStep = (150 / scale) / ppy;
+        const idealGapPixels = 65; 
+        
+        const idealYearsStep = (idealGapPixels / scale) / ppy;
         
         if (idealYearsStep <= 10) return 10;
         if (idealYearsStep <= 25) return 25;
