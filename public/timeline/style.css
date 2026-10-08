@@ -24,8 +24,10 @@ html, body { margin: 0; padding: 0; width: 100%; height: 100dvh; overflow: hidde
 /* =========================================
    ГЛОБАЛЬНЫЙ ДИЗАЙН ПАНЕЛЕЙ И ОВЕРЛЕЕВ
    ========================================= */
-:is(#unified-header, .dropdown-panel, .search-dropdown, #fact-card, #facts-nav, #tooltip) { background: rgba(21, 21, 21, 0.95); border: var(--border); box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5); }
-
+:is(#unified-header, .dropdown-panel, .search-dropdown, #fact-card, #facts-nav, #tooltip) { 
+    background: rgba(21, 21, 21, 0.5); /* Увеличили прозрачность примерно в 2 раза */
+    border: var(--border); 
+}
 /* =========================================
    ШАПКА (HEADER) И ОСЬ ДАТ
    ========================================= */
@@ -188,6 +190,8 @@ input[type="range"]:not(.dual-slider-wrapper input) { width: 100%; accent-color:
     .dropdown-panel { 
         max-width: 100%; 
         top: 3.2rem; 
+        bottom: 0; /* Прибиваем панель к самому низу экрана */
+        max-height: none; /* Убираем десктопное ограничение по высоте */
         border-left: none; 
         border-right: none; 
         border-radius: 0; 

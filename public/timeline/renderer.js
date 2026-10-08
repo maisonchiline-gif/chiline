@@ -365,7 +365,19 @@ export class Renderer {
             }
 
             ctx.beginPath();
-            ctx.roundRect(x, y, w, h, 6); 
+            if (ctx.roundRect) {
+                ctx.roundRect(x, y, w, h, 6);
+            } else {
+                ctx.moveTo(x + 6, y);
+                ctx.lineTo(x + w - 6, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + 6);
+                ctx.lineTo(x + w, y + h - 6);
+                ctx.quadraticCurveTo(x + w, y + h, x + w - 6, y + h);
+                ctx.lineTo(x + 6, y + h);
+                ctx.quadraticCurveTo(x, y + h, x, y + h - 6);
+                ctx.lineTo(x, y + 6);
+                ctx.quadraticCurveTo(x, y, x + 6, y);
+            }
             ctx.fill();
 
             if (drawBorder) {
