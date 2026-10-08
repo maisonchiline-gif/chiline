@@ -514,7 +514,9 @@ export class Renderer {
         const endX = maxYear * ppy;
         
         this.bgGradient = this.ctx.createLinearGradient(startX, 0, endX, 0);
-        this.bgGradient.addColorStop(0, '#151515');
+        
+        // Используем полностью прозрачный базовый цвет вместо сплошного
+        this.bgGradient.addColorStop(0, '#15151500'); 
         
         const BLEND_YEARS = 40; 
 
@@ -524,7 +526,15 @@ export class Renderer {
             let currentPos = (era.center - minYear) / maxSpan;
             currentPos = Math.max(0, Math.min(1, currentPos));
             
-            const darkBgColor = 'color-mix(in srgb, ' + era.color + ' 12%, #151515)';
+            // Нативная прозрачность 12% (1F для HEX) вместо color-mix()
+            let darkBgColor;
+            if (era.color.startsWith('#')) {
+                darkBgColor = era.color + '1F'; 
+            } else if (era.color.startsWith('hsl')) {
+                darkBgColor = era.color.replace('hsl', 'hsla').replace(')', ', 0.12)');
+            } else {
+                darkBgColor = 'rgba(255, 255, 255, 0.12)';
+            }
             
             this.bgGradient.addColorStop(currentPos, darkBgColor);
             
@@ -548,7 +558,7 @@ export class Renderer {
             }
         }
 
-        this.bgGradient.addColorStop(1, '#151515');
+        this.bgGradient.addColorStop(1, '#15151500');
     }
 
     _drawErasBackground(ctx, minX, maxX, minY, maxY) {
