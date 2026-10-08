@@ -13,7 +13,7 @@ const COMPOSER_FONT = '500 25px system-ui, -apple-system, sans-serif';
 export class Renderer {
     constructor(canvas, camera) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+        this.ctx = canvas.getContext('2d', { alpha: false });
         this.camera = camera;
         
         this.dpr = window.devicePixelRatio || 1;
