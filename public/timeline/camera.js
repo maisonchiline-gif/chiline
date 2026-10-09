@@ -11,7 +11,10 @@ export class Camera {
 
         this.x = 0;
         this.y = 0;
+        
         this.scale = 1;
+        this.targetScale = 1; 
+        this.zoomFocus = { x: 0, y: 0 };
 
         this.vx = 0;
         this.vy = 0;
@@ -32,6 +35,9 @@ export class Camera {
         this.isPointerDown = false;
         this.lastDragTime = 0;
         this.lastPointer = { x: 0, y: 0 };
+        
+        // Массив для точного вычисления инерции (сглаживание микро-рывков)
+        this.velocityHistory = [];
         this.pointers = new Map();
 
         this.flight = null;
@@ -55,7 +61,7 @@ export class Camera {
 
         const isPortrait = H > W;
         const padRatioX = isPortrait ? 0.10 : 0.20;
-        const padRatioY = 0.20;
+        const padRatioY = 0.25; // Строго 25% от экрана
 
         this.x = this._clampAxis(this.x, this.worldBounds.minX, this.worldBounds.maxX, this.scale, W, padRatioX);
         this.y = this._clampAxis(this.y, this.worldBounds.minY, this.worldBounds.maxY, this.scale, H, padRatioY);
@@ -66,9 +72,14 @@ export class Camera {
         const minOffset = (screenSize - pad) - worldMax * scale;
         const maxOffset = pad - worldMin * scale;
 
+        // ИСПРАВЛЕНИЕ ГРАНИЦ:
+        // Если контент меньше свободного места, мы больше НЕ центрируем его жестко.
+        // Мы позволяем ему свободно плавать между верхним (25%) и нижним (25%) ограничителем.
         if (minOffset > maxOffset) {
-            return (screenSize - (worldMin + worldMax) * scale) / 2;
+            return Math.max(maxOffset, Math.min(val, minOffset));
         }
+        
+        // Стандартное ограничение, если контент больше экрана
         return Math.max(minOffset, Math.min(val, maxOffset));
     }
 
@@ -97,7 +108,7 @@ export class Camera {
 
         const isPortrait = rect.height > rect.width;
         const padRatioX = isPortrait ? 0.10 : 0.20;
-        const padRatioY = 0.20;
+        const padRatioY = 0.25; // Строго 25% в полетах
 
         endX = this._clampAxis(endX, this.worldBounds.minX, this.worldBounds.maxX, endScale, rect.width, padRatioX);
         endY = this._clampAxis(endY, this.worldBounds.minY, this.worldBounds.maxY, endScale, rect.height, padRatioY);
@@ -126,6 +137,7 @@ export class Camera {
             duration: cinematicDuration
         };
         
+        this.targetScale = endScale; 
         this.vx = 0; 
         this.vy = 0;
         this.requestRender();
@@ -134,6 +146,26 @@ export class Camera {
     update(currentTime, dt) {
         let needsRender = false;
 
+        // Плавный зум
+        if (Math.abs(this.scale - this.targetScale) > 0.0001) {
+            const lerpFactor = 1 - Math.exp(-dt * 0.015); 
+            const prevScale = this.scale;
+            
+            this.scale += (this.targetScale - this.scale) * lerpFactor;
+            
+            if (Math.abs(this.scale - this.targetScale) < 0.0001) {
+                this.scale = this.targetScale;
+            }
+            
+            const ratio = this.scale / prevScale;
+            this.x = this.zoomFocus.x - (this.zoomFocus.x - this.x) * ratio;
+            this.y = this.zoomFocus.y - (this.zoomFocus.y - this.y) * ratio;
+            
+            this.clamp();
+            needsRender = true;
+        }
+
+        // Полет
         if (this.flight) {
             const elapsed = currentTime - this.flight.startTime;
             const tNorm = Math.min(elapsed / this.flight.duration, 1);
@@ -145,13 +177,15 @@ export class Camera {
             this.x = this.flight.startX + (this.flight.endX - this.flight.startX) * tau;
             this.y = this.flight.startY + (this.flight.endY - this.flight.startY) * tau;
             this.scale = this.flight.startScale + (this.flight.endScale - this.flight.startScale) * tau;
-
+            
+            this.targetScale = this.scale; 
             this.clamp();
             needsRender = true;
             if (tNorm === 1) this.flight = null;
             return needsRender;
         }
 
+        // Кинематика (инерция)
         if (!this.isDragging && (Math.abs(this.vx) > 0 || Math.abs(this.vy) > 0)) {
             const expTerm = Math.exp(-this.friction * dt);
             const posFactor = (1 - expTerm) / this.friction;
@@ -208,18 +242,27 @@ export class Camera {
         const pos = this._getEventPos(e);
         this.isPointerDown = true;
         this.isDragging = false;
+        
         this.flight = null;
+        this.targetScale = this.scale; 
+        
         this.vx = 0; 
         this.vy = 0;
+        this.velocityHistory = []; // Сброс истории скоростей перед новым рывком
         
         this.lastPointer = pos;
         this.lastDragTime = performance.now();
     }
 
     _onPointerMove(e) {
-        if (!this.isPointerDown || e.pointerType === 'touch') return;
-
+        if (e.pointerType === 'touch') return;
+        
         const pos = this._getEventPos(e);
+        this.zoomFocus.x = pos.x;
+        this.zoomFocus.y = pos.y;
+
+        if (!this.isPointerDown) return;
+
         const dx = pos.x - this.lastPointer.x;
         const dy = pos.y - this.lastPointer.y;
 
@@ -236,8 +279,22 @@ export class Camera {
             this.clamp();
 
             if (dt > 0) {
-                this.vx = dx / dt;
-                this.vy = dy / dt;
+                // ИСПРАВЛЕНИЕ ИНЕРЦИИ: Записываем движения в кольцевой буфер
+                this.velocityHistory.push({ dx, dy, dt });
+                if (this.velocityHistory.length > 5) {
+                    this.velocityHistory.shift();
+                }
+
+                // Вычисляем скорость как среднее за последние кадры
+                let sumDx = 0, sumDy = 0, sumDt = 0;
+                for (const v of this.velocityHistory) {
+                    sumDx += v.dx;
+                    sumDy += v.dy;
+                    sumDt += v.dt;
+                }
+                
+                this.vx = sumDx / sumDt;
+                this.vy = sumDy / sumDt;
             }
 
             this.lastPointer = pos;
@@ -264,18 +321,24 @@ export class Camera {
 
     _onWheel(e) {
         e.preventDefault();
+        
         this.flight = null;
+        this.vx = 0;
+        this.vy = 0;
 
         const pos = this._getEventPos(e);
-        const zoomIntensity = e.ctrlKey ? 0.01 : 0.002;
+        this.zoomFocus.x = pos.x;
+        this.zoomFocus.y = pos.y;
+
+        const zoomIntensity = e.ctrlKey ? 0.005 : 0.0015; 
         const delta = -e.deltaY;
         const scaleFactor = Math.exp(delta * zoomIntensity);
         
-        this._zoomToPoint(pos.x, pos.y, scaleFactor);
+        this.targetScale = clampVal(this.targetScale * scaleFactor, this.minScale, this.maxScale);
+        this.requestRender();
     }
 
     _onTouch(e) {
-        // Оставляем preventDefault только для мультитач и движений, чтобы дать браузеру кликнуть
         if (e.type === 'touchmove' || (e.touches && e.touches.length > 1)) {
             if (e.cancelable) e.preventDefault();
         }
@@ -287,6 +350,9 @@ export class Camera {
         if (e.type === 'touchstart') {
             this.vx = 0; 
             this.vy = 0;
+            this.targetScale = this.scale;
+            this.velocityHistory = []; // Сброс истории для пальца
+
             if (e.touches.length === 1) {
                 this.isPointerDown = true;
                 this.isDragging = false;
@@ -315,7 +381,6 @@ export class Camera {
                 const dx = pos.x - this.lastPointer.x;
                 const dy = pos.y - this.lastPointer.y;
                 
-                // Если палец сдвинулся, активируем режим Drag
                 if (!this.isDragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
                     this.isDragging = true;
                 }
@@ -329,8 +394,19 @@ export class Camera {
                     this.clamp();
                     
                     if (dt > 0) {
-                        this.vx = dx / dt; 
-                        this.vy = dy / dt;
+                        // Сглаживаем скорость пальца
+                        this.velocityHistory.push({ dx, dy, dt });
+                        if (this.velocityHistory.length > 5) {
+                            this.velocityHistory.shift();
+                        }
+                        let sumDx = 0, sumDy = 0, sumDt = 0;
+                        for (const v of this.velocityHistory) {
+                            sumDx += v.dx;
+                            sumDy += v.dy;
+                            sumDt += v.dt;
+                        }
+                        this.vx = sumDx / sumDt; 
+                        this.vy = sumDy / sumDt;
                     }
 
                     this.lastPointer = pos;
@@ -363,7 +439,10 @@ export class Camera {
                 
                 this.x = centerX - (centerX - this.x) * stepFactor;
                 this.y = centerY - (centerY - this.y) * stepFactor;
+                
                 this.scale = newScale;
+                this.targetScale = newScale; 
+                
                 this.clamp();
 
                 this.lastPinchCenter = { x: centerX, y: centerY };
@@ -377,7 +456,6 @@ export class Camera {
                 this.isPointerDown = false;
                 
                 if (this.isDragging) {
-                    // Откладываем сброс драга на 50мс, чтобы дать click() понять, что был драг
                     setTimeout(() => { this.isDragging = false; }, 50);
                 }
                 
@@ -399,6 +477,7 @@ export class Camera {
     _zoomToPoint(mX, mY, scaleFactor) {
         const oldScale = this.scale;
         this.scale = clampVal(this.scale * scaleFactor, this.minScale, this.maxScale);
+        this.targetScale = this.scale; 
         
         const ratio = this.scale / oldScale;
         this.x = mX - (mX - this.x) * ratio;

@@ -56,6 +56,8 @@ const popupUI = {
     activeSoaIdx: null
 };
 
+let isPremiumUnlocked = localStorage.getItem('composer_premium') === 'true';
+
 function setHomeActive() {
     const btn = document.getElementById('btn-jump-composers');
     if (btn) btn.classList.add('active-btn');
@@ -231,7 +233,8 @@ async function bootstrap() {
     
     initComposerPopup(); 
     buildDynamicCheckboxes();
-    initWidthSlider(); 
+    initWidthSlider();
+    initPremiumModal(); 
     bindEvents();
     updateCore();
     zoomToFit('instant');
@@ -283,6 +286,14 @@ function initWidthSlider() {
             }
             
             updateCore();
+
+            for (let i = 0; i < store.filteredCount; i++) {
+                const soaIdx = store.filteredItems[i].soaIdx;
+                store.animX[soaIdx] = store.layoutX[soaIdx];
+                store.animW[soaIdx] = store.layoutW[soaIdx];
+                store.animY[soaIdx] = store.layoutY[soaIdx];
+                store.animH[soaIdx] = store.layoutH[soaIdx];
+            }
         });
     }
 }
@@ -338,7 +349,7 @@ function updateCore() {
     let minX, maxX;
     if (appState.mainMode === 'timeline') {
         minX = earliestFactYear * ppy;
-        maxX = currentYear * ppy;
+        maxX = 9000 * ppy;
     } else {
         minX = -350;
         maxX = LAYOUT_CONSTANTS.RATING_MAX_WIDTH + 200;
@@ -780,6 +791,12 @@ function bindEvents() {
             const btn = e.target;
             const container = btn.closest('.toggle-switch');
             if (!container) return;
+
+            // --- БЛОКИРОВКА РЕЙТИНГА ---
+            if (container.id === 'ctrl-main-mode' && btn.getAttribute('data-val') === 'rating' && !isPremiumUnlocked) {
+                showPremiumModal();
+                return; // Прерываем выполнение, кнопка не нажмется
+            }
             
             container.querySelectorAll('.switch-btn').forEach(function(b) { b.classList.remove('active'); });
             btn.classList.add('active');
@@ -828,7 +845,13 @@ function bindEvents() {
             }
         }
         
-        if (e.target.id === 'btn-export-svg') generateAndDownloadSVG();
+        if (e.target.id === 'btn-export-svg') {
+            if (!isPremiumUnlocked) {
+                showPremiumModal();
+            } else {
+                generateAndDownloadSVG();
+            }
+        }
     });
 
     const searchInput = document.getElementById('ctrl-search');
@@ -961,14 +984,14 @@ function bindEvents() {
                 if (isDoubleTap && lastCanvasTapIdx === renderer.activeSoaIdx) {
                     openComposerPopup(renderer.activeSoaIdx);
                     
-                    // Плавный полет при двойном клике
-                    const targetX = store.layoutX[renderer.activeSoaIdx];
-                    const targetY = store.layoutY[renderer.activeSoaIdx];
+                    // Плавный полет при двойном клике ТОЛЬКО НА МОБИЛЬНЫХ
                     const isMobile = window.innerWidth <= 768;
-                    const offset = appState.mainMode === 'timeline' ? (isMobile ? 0 : 200) : 0;
-                    
-                    camera.flyTo(targetX + offset, targetY, 0.5);
-                    setHomeActive();
+                    if (isMobile) {
+                        const targetX = store.layoutX[renderer.activeSoaIdx];
+                        const targetY = store.layoutY[renderer.activeSoaIdx];
+                        camera.flyTo(targetX, targetY, 0.5);
+                        setHomeActive();
+                    }
                 } else {
                     closeComposerPopup();
                 }
@@ -1016,6 +1039,10 @@ function toggleFactsMode() {
         hideFactCard();
         store.facts.forEach(function(f) { f.highlight = false; });
         renderer.requestRender();
+
+        closeComposerPopup();
+        if (renderer) renderer._setActiveComposer(null);
+        zoomToFit(false);
     }
 }
 
@@ -1070,6 +1097,7 @@ function activateFact(index) {
     if (factTimeout) clearTimeout(factTimeout);
 
     const ppy = LAYOUT_CONSTANTS.PIXELS_PER_YEAR;
+    
     camera.flyTo(fact.year * ppy, 0, 0.8, 'epic');
     setHomeActive();
     
@@ -1132,7 +1160,7 @@ function zoomToFit(mode) {
     const isPortrait = rect.height > rect.width;
     
     const padRatioX = isPortrait ? 0.10 : 0.20;
-    const padRatioY = 0.20; 
+    const padRatioY = 0.25; 
     
     const availableWidth = rect.width * (1 - padRatioX * 2);
     const availableHeight = rect.height * (1 - padRatioY * 2);
@@ -1241,6 +1269,43 @@ function generateAndDownloadSVG() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+function showPremiumModal() {
+    document.getElementById('premium-modal').classList.add('visible');
+    document.getElementById('premium-error').style.display = 'none';
+}
+
+function initPremiumModal() {
+    const btnClose = document.getElementById('btn-close-modal');
+    const btnSubmit = document.getElementById('btn-submit-code');
+    const modal = document.getElementById('premium-modal');
+    const errorMsg = document.getElementById('premium-error');
+    const inputCode = document.getElementById('premium-code-input');
+
+    // Проверяем, есть ли элементы на странице. Если нет — выходим, не ломая код.
+    if (!btnClose || !btnSubmit || !modal) {
+        console.warn('HTML для премиум-окна не найден! Проверьте index.html');
+        return; 
+    }
+
+    btnClose.addEventListener('click', function() {
+        modal.classList.remove('visible');
+    });
+
+    btnSubmit.addEventListener('click', function() {
+        const code = inputCode.value.trim().toUpperCase();
+        
+        // ВАШ СЕКРЕТНЫЙ КОД ТУТ
+        if (code === 'BOOSTY2026' || code === 'SUPPORTER') {
+            localStorage.setItem('composer_premium', 'true');
+            isPremiumUnlocked = true;
+            modal.classList.remove('visible');
+            alert('Спасибо за поддержку! Функции "Рейтинг" и "Экспорт" успешно разблокированы.');
+        } else {
+            errorMsg.style.display = 'block';
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', bootstrap);

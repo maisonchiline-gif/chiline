@@ -194,6 +194,27 @@
     
     <div id="tooltip"></div>
 
+    <!-- МОДАЛЬНОЕ ОКНО ПРЕМИУМ-ДОСТУПА -->
+    <div id="premium-modal" class="premium-overlay">
+        <div class="premium-content">
+            <button id="btn-close-modal" class="premium-close">✖</button>
+            <h2 style="margin-top:0; margin-bottom: 15px; color: var(--c-accent); font-size: 1.5rem;">Поддержите проект!</h2>
+            
+            <p>Мы вложили огромное количество времени и сил в создание этого интерактивного таймлайна: бережно собирали данные, настраивали алгоритмы укладки и продумывали каждую деталь дизайна.</p>
+            
+            <p>У нас грандиозные планы по развитию проекта: добавление новых эпох, расширенная база композиторов, новые визуальные режимы и улучшенный интерфейс!</p>
+            
+            <p>Функции <strong>«Рейтинг»</strong> и <strong>«Экспорт в SVG»</strong> доступны по специальному коду. Оформив подписку на нашем <a href="https://boosty.to/" target="_blank">Boosty</a>, вы получите полный доступ ко всем скрытым функциям и напрямую поможете проекту расти. Спасибо, что вы с нами!</p>
+            
+            <div class="premium-input-group">
+                <input type="text" id="premium-code-input" placeholder="Введите код с Boosty..." autocomplete="off">
+                <button id="btn-submit-code" class="action-btn">Разблокировать</button>
+            </div>
+            <div id="premium-error" style="color: var(--c-accent); font-size: 0.8rem; margin-top: 10px; display: none;">Неверный код. Попробуйте еще раз или проверьте подписку на Boosty.</div>
+        </div>
+    </div>
+    
+
     <!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ -->
     <script type="module" src="data.js"></script>
     <script type="module" src="layout.js"></script>
@@ -202,8 +223,5 @@
     <script type="module" src="renderer.js"></script>
     <script type="module" src="auth.js"></script>
     <script type="module" src="main.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
 </body>
 </html>

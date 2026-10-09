@@ -72,7 +72,7 @@ html, body { margin: 0; padding: 0; width: 100%; height: 100dvh; overflow: hidde
 /* =========================================
    ВЫПАДАЮЩИЕ ПАНЕЛИ НАСТРОЕК
    ========================================= */
-.dropdown-panel { position: fixed; top: 6.8rem; z-index: 190; width: 100%; max-width: 17.5rem; max-height: calc(100dvh - 7rem); padding: 1.25rem; opacity: 0; pointer-events: none; transform: translateY(-0.5rem); transition: var(--panel-anim); overflow-y: auto; border-radius: 6px; }
+.dropdown-panel { position: fixed; top: 6.8rem; z-index: 190; width: 100%; max-width: 17.5rem; max-height: calc(100dvh - 7.7rem); padding: 1.25rem; opacity: 0; pointer-events: none; transform: translateY(-0.5rem); transition: var(--panel-anim); overflow-y: auto; border-radius: 6px; }
 .dropdown-panel.active-dropdown { opacity: 1; pointer-events: auto; transform: translateY(0); }
 .filter-group { margin-bottom: 1.25rem; }
 :is(.filter-group > label, .filter-header label, .filter-label) { display: block; margin-bottom: 0.5rem; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--c-t60); }
@@ -86,8 +86,21 @@ html, body { margin: 0; padding: 0; width: 100%; height: 100dvh; overflow: hidde
 .checkbox-label input { margin-right: 0.625rem; cursor: pointer; accent-color: var(--c-accent); }
 .collapse-toggle { display: inline-block; transition: transform 0.3s ease; margin-right: 6px; font-size: 12px; transform-origin: center; }
 .collapse-toggle.collapsed { transform: rotate(-90deg); }
-div[id^="sub-"] { max-height: 1000px; overflow: hidden; opacity: 1; transition: max-height 0.2s ease-in-out, opacity 0.2s ease-in-out; }
-div[id^="sub-"].collapsed-group { max-height: 0; opacity: 0; pointer-events: none; }
+div[id^="sub-"] { 
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 1000px; 
+    overflow: hidden; 
+    opacity: 1; 
+    transition: max-height 0.2s ease-in-out, opacity 0.2s ease-in-out, margin-top 0.2s ease-in-out; 
+}
+div[id^="sub-"].collapsed-group { 
+    max-height: 0; 
+    opacity: 0; 
+    pointer-events: none; 
+    margin-top: -0.5rem; 
+}
 
 /* Ползунки (Range) */
 .dual-slider-wrapper { position: relative; width: 100%; height: 1.875rem; margin-top: 0.3rem; }
@@ -189,7 +202,7 @@ input[type="range"]:not(.dual-slider-wrapper input) { width: 100%; accent-color:
     
     .dropdown-panel { 
         max-width: 100%; 
-        top: 3.2rem; 
+        top: 5.4rem; 
         bottom: 0; /* Прибиваем панель к самому низу экрана */
         max-height: none; /* Убираем десктопное ограничение по высоте */
         border-left: none; 
@@ -203,3 +216,52 @@ input[type="range"]:not(.dual-slider-wrapper input) { width: 100%; accent-color:
     .nav-btn-square { width: 2.5rem !important; }
     #fact-card { bottom: 3.5rem; width: 100%; border-left: none; border-right: none; padding: 1rem; max-height: 45vh; overflow-y: auto; border-radius: 0; }
 }
+
+/* =========================================
+   МОДАЛЬНОЕ ОКНО ПРЕМИУМ
+   ========================================= */
+.premium-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
+    z-index: 2000; display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+}
+.premium-overlay.visible { opacity: 1; pointer-events: auto; }
+
+.premium-content {
+    position: relative; width: 90%; max-width: 500px;
+    background: rgba(21, 21, 21, 0.95); border: 1px solid var(--c-t30);
+    border-radius: 8px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+    transform: translateY(20px); transition: transform 0.3s ease;
+    text-align: left;
+}
+.premium-overlay.visible .premium-content { transform: translateY(0); }
+
+.premium-close {
+    position: absolute; top: 15px; right: 15px; background: none; border: none;
+    color: var(--c-t60); font-size: 18px; cursor: pointer; transition: color 0.2s;
+}
+.premium-close:hover { color: var(--c-txt); }
+
+.premium-content p {
+    color: var(--c-t80); font-size: 0.95rem; line-height: 1.6; margin-bottom: 15px;
+}
+.premium-content a {
+    color: var(--c-txt); text-decoration: underline; text-underline-offset: 3px;
+}
+.premium-content a:hover { color: var(--c-accent); }
+
+.premium-input-group {
+    display: flex; gap: 10px; margin-top: 25px;
+}
+#premium-code-input {
+    flex: 1; height: var(--ui-size); padding: 0 1rem; border-radius: 6px;
+    border: 1px solid var(--c-t30); background: rgba(0,0,0,0.3); color: var(--c-txt); outline: none;
+    font-size: 0.9rem;
+}
+#premium-code-input:focus { border-color: var(--c-accent); background: var(--c-t5); }
+
+#btn-submit-code {
+    background: var(--c-txt); color: var(--c-bg); border-radius: 6px; padding: 0 1.5rem;
+}
+#btn-submit-code:hover { background: var(--c-t80); color: var(--c-bg); }
