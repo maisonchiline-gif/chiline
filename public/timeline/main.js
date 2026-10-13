@@ -3,7 +3,7 @@
  * ШАГ 6: UI КОНТРОЛЛЕР И ИНТЕГРАЦИЯ (main.js)
  * ==========================================
  */
-
+import { currentLang, t } from './i18n.js';
 import { store } from './data.js';
 import { layoutEngine, LAYOUT_CONSTANTS } from './layout.js';
 import { spatialIndex } from './spatial.js';
@@ -57,6 +57,17 @@ const popupUI = {
 };
 
 let isPremiumUnlocked = localStorage.getItem('composer_premium') === 'true';
+
+function applyTranslations() {
+    // Перевод элементов с атрибутом data-i18n
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.textContent = t(key);
+    });
+    // Перевод плейсхолдера поиска
+    const searchInput = document.getElementById('ctrl-search');
+    if (searchInput) searchInput.placeholder = t('searchPlaceholder');
+}
 
 function setHomeActive() {
     const btn = document.getElementById('btn-jump-composers');
@@ -120,13 +131,18 @@ function openComposerPopup(soaIdx) {
     if (age <= 0) age = 1; 
 
     const wPerYear = (comp.works / age).toFixed(1);
+    const displayName = currentLang === 'ru' ? comp.name : (comp.engName || comp.name);
+    
+    // Если русский, показываем "Имя (Eng)", если англ — только "Eng"
+    popupUI.title.textContent = currentLang === 'ru' 
+        ? comp.name + (comp.engName ? ' (' + comp.engName + ')' : '') 
+        : displayName;
 
-    popupUI.title.textContent = comp.name + (comp.engName ? ' (' + comp.engName + ')' : '');
-    popupUI.dates.textContent = 'Годы жизни: ' + comp.birth + ' - ' + comp.death + ' (' + age + ' лет)';
-    popupUI.era.textContent = 'Эпоха: ' + comp.era;
-    popupUI.country.textContent = 'Страна: ' + comp.country;
-    popupUI.worksCount.textContent = 'Произведений: ' + comp.works;
-    popupUI.worksPerYear.textContent = 'В среднем в год: ' + wPerYear;
+    popupUI.dates.textContent = `${t('lifespan')}: ${comp.birth} - ${comp.death} (${age} ${t('years')})`;
+    popupUI.era.textContent = `${t('era')}: ${comp.era}`;
+    popupUI.country.textContent = `${t('country')}: ${comp.country}`;
+    popupUI.worksCount.textContent = `${t('works')}: ${comp.works}`;
+    popupUI.worksPerYear.textContent = `${t('avgPerYear')}: ${wPerYear}`;
 
     popupUI.activeSoaIdx = soaIdx;
     popupUI.container.style.display = 'block';
@@ -178,6 +194,7 @@ function syncPopupPosition() {
 }
 
 async function bootstrap() {
+    applyTranslations()
     const canvas = document.getElementById('main-canvas');
     camera = new Camera(canvas, function() { if (renderer) renderer.requestRender(); });
     renderer = new Renderer(canvas, camera);
@@ -230,7 +247,7 @@ async function bootstrap() {
         console.error("Ошибка загрузки данных:", e);
         return;
     }
-    
+
     initComposerPopup(); 
     buildDynamicCheckboxes();
     initWidthSlider();
@@ -347,16 +364,18 @@ function updateCore() {
     const earliestFactYear = store.facts.length > 0 ? store.facts[store.facts.length - 1].year : -60000;
 
     let minX, maxX;
-    if (appState.mainMode === 'timeline') {
-        minX = earliestFactYear * ppy;
-        maxX = 9000 * ppy;
-    } else {
-        minX = -350;
-        maxX = LAYOUT_CONSTANTS.RATING_MAX_WIDTH + 200;
-    }
+if (appState.mainMode === 'timeline') {
+    minX = earliestFactYear * ppy;
+    maxX = 9000 * ppy;
+} else {
+    // Расширяем границы в режиме рейтинга, чтобы дать полную свободу камере
+    minX = -3000;
+    maxX = LAYOUT_CONSTANTS.RATING_MAX_WIDTH + 2000;
+}
 
-    camera.setWorldBounds(minX, maxX, minY, maxY);
-    renderer.requestRender();
+// Делаем вертикальные границы (minY, maxY) тоже более мягкими или широкими
+camera.setWorldBounds(minX, maxX, minY - 1000, maxY + 1000);
+    renderer.requestRender()
 }
 
 function buildDynamicCheckboxes() {
@@ -909,9 +928,9 @@ function bindEvents() {
                         const targetX = store.layoutX[targetSoaIdx];
                         const targetY = store.layoutY[targetSoaIdx];
                         
-                        const isMobile = window.innerWidth <= 768;
-                        const offset = appState.mainMode === 'timeline' ? (isMobile ? 0 : 200) : 0;
-                        const delay = isMobile ? 350 : 0;
+                        const isPortrait = window.innerHeight > window.innerWidth;
+                        const offset = appState.mainMode === 'timeline' ? (isPortrait ? 0 : 200) : 0;
+                        const delay = isPortrait ? 350 : 0;
                         
                         setTimeout(function() {
                             camera.flyTo(targetX + offset, targetY, 0.5);
@@ -985,8 +1004,8 @@ function bindEvents() {
                     openComposerPopup(renderer.activeSoaIdx);
                     
                     // Плавный полет при двойном клике ТОЛЬКО НА МОБИЛЬНЫХ
-                    const isMobile = window.innerWidth <= 768;
-                    if (isMobile) {
+                    const isPortrait = window.innerHeight > window.innerWidth;
+                    if (isPortrait) {
                         const targetX = store.layoutX[renderer.activeSoaIdx];
                         const targetY = store.layoutY[renderer.activeSoaIdx];
                         camera.flyTo(targetX, targetY, 0.5);

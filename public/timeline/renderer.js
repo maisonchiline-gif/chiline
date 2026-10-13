@@ -3,7 +3,7 @@
  * ШАГ 5: RENDER LOOP & CANVAS 2D
  * ==========================================
  */
-
+import { currentLang, t } from './i18n.js';
 import { store } from './data.js';
 import { spatialIndex } from './spatial.js';
 import { LAYOUT_CONSTANTS } from './layout.js';
@@ -302,6 +302,12 @@ export class Renderer {
         if (window.syncPopupPosition) window.syncPopupPosition();
     }
 
+    /**
+     * Отрисовка плашек композиторов (Zero-GC, плавные двухцветные градиенты перехода)
+     */
+    /**
+     * Отрисовка плашек композиторов (Zero-GC, поддержка ныне живущих и переходных авторов)
+     */
     _drawComposers(ctx, minX, maxX, minY, maxY, scale, isAnimMoving) {
         const trackScreenHeight = LAYOUT_CONSTANTS.TRACK_HEIGHT * scale;
         const shouldDrawText = trackScreenHeight > 8;
@@ -312,22 +318,20 @@ export class Renderer {
             ctx.textAlign = 'left';
         }
 
-        let count = 0;
-        let getSoaIdx;
+        const count = isAnimMoving 
+            ? store.filteredCount 
+            : spatialIndex.queryVisible(minX, maxX, minY, maxY);
 
-        if (isAnimMoving) {
-            count = store.filteredCount;
-            getSoaIdx = function(i) { return store.filteredItems[i].soaIdx; }; 
-        } else {
-            count = spatialIndex.queryVisible(minX, maxX, minY, maxY);
-            getSoaIdx = function(i) { return spatialIndex.visibleBuffer[i]; };
-        }
+        if (count === 0) return;
+
+        const currentYear = new Date().getFullYear();
+        const isTimeline = (this.currentMode === 'timeline');
 
         for (let i = 0; i < count; i++) {
-            const soaIdx = getSoaIdx(i);
-            const item = store.getRawItemBySoaIdx(soaIdx); 
-            const instColor = store.instanceColor[soaIdx]; 
-            
+            const soaIdx = isAnimMoving 
+                ? store.filteredItems[i].soaIdx 
+                : spatialIndex.visibleBuffer[i];
+
             const x = store.animX[soaIdx];
             const y = store.animY[soaIdx];
             const w = store.animW[soaIdx];
@@ -337,14 +341,54 @@ export class Renderer {
                 if (x + w < minX || x > maxX || y + h < minY || y > maxY) continue;
             }
 
+            const item = store.getRawItemBySoaIdx(soaIdx);
+            const instColor = store.instanceColor[soaIdx];
+            const transYear = store.transitionYears ? store.transitionYears[soaIdx] : 0;
+            const color2 = store.instanceColor2 ? store.instanceColor2[soaIdx] : null;
+
             const isHovered = (this.hoveredSoaIdx === soaIdx);
             const isActive = (this.activeSoaIdx === soaIdx);
             const drawBorder = isHovered || isActive;
 
             ctx.globalAlpha = this.currentAlphas[soaIdx];
-            const currentYear = new Date().getFullYear();
-            
-            if (item.death >= currentYear) {
+
+            const isLiving = (item.death >= currentYear);
+            const isTransitional = (isTimeline && transYear > 0 && color2);
+
+            // --- 1. СТИЛЬ ЗАЛИВКИ (FILL STYLE) ---
+            if (isTransitional) {
+                // Переходный период (включая ныне живущих, например, Сильвестрова)
+                const lifespan = item.lifespan > 0 ? item.lifespan : 1;
+                const tCenter = (transYear - item.birth) / lifespan;
+                
+                // Окно сглаживания: ±4 года от точки смены стиля
+                const halfWindow = 4 / lifespan;
+                const stop1 = Math.max(0, Math.min(1, tCenter - halfWindow));
+                const stop2 = Math.max(stop1, Math.min(1, tCenter + halfWindow));
+
+                const grad = ctx.createLinearGradient(x, 0, x + w, 0);
+                grad.addColorStop(0, instColor);
+                grad.addColorStop(stop1, instColor);
+                grad.addColorStop(stop2, color2);
+
+                if (isLiving) {
+                    // Для ныне живущих второй цвет в конце плашки плавно растворяется в прозрачность
+                    const fadeStart = stop2 + (1 - stop2) * 0.5;
+                    if (fadeStart < 1) {
+                        grad.addColorStop(fadeStart, color2);
+                    }
+                    const color2Transparent = color2.startsWith('#')
+                        ? color2 + '00'
+                        : (color2.startsWith('hsl') ? color2.replace('hsl', 'hsla').replace(')', ', 0)') : 'rgba(0,0,0,0)');
+                    grad.addColorStop(1, color2Transparent);
+                } else {
+                    grad.addColorStop(1, color2);
+                }
+
+                ctx.fillStyle = grad;
+
+            } else if (isLiving) {
+                // Ныне живущие авторы без смены эпохи (монолитный цвет с затуханием в прозрачность)
                 if (item._lastColorBase !== instColor) {
                     item._lastColorBase = instColor;
                     if (instColor.startsWith('#')) {
@@ -360,10 +404,13 @@ export class Renderer {
                 grad.addColorStop(0.65, instColor);
                 grad.addColorStop(1, item._gradTransparent);
                 ctx.fillStyle = grad;
+
             } else {
+                // Стандартный композитор одной эпохи
                 ctx.fillStyle = instColor;
             }
 
+            // --- 2. ГЕОМЕТРИЯ ПЛАШКИ ---
             ctx.beginPath();
             if (ctx.roundRect) {
                 ctx.roundRect(x, y, w, h, 6);
@@ -380,9 +427,10 @@ export class Renderer {
             }
             ctx.fill();
 
+            // --- 3. ОБВОДКА (HOVER / SELECTION) ---
             if (drawBorder) {
                 ctx.save();
-                if (item.death >= currentYear) {
+                if (isLiving) {
                     const borderGrad = ctx.createLinearGradient(x, 0, x + w, 0);
                     borderGrad.addColorStop(0, '#FFFFFF');
                     borderGrad.addColorStop(0.65, '#FFFFFF');
@@ -391,29 +439,30 @@ export class Renderer {
                 } else {
                     ctx.strokeStyle = '#FFFFFF';
                 }
-                ctx.lineWidth = 3 / scale; 
+                ctx.lineWidth = 3 / scale;
                 ctx.stroke();
                 ctx.restore();
             }
 
+            // --- 4. ТЕКСТОВЫЕ МЕТКИ ---
             if (shouldDrawText) {
-                if (this.currentMode === 'rating') {
-                    const rank = store.ranks[soaIdx] + 1; 
-                    
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                if (!isTimeline) {
+                    // Режим рейтинга
+                    const rank = store.ranks[soaIdx] + 1;
+
                     ctx.textAlign = 'right';
-                    ctx.fillText('#' + String(rank), x - 15, y + h / 2);
-                    ctx.textAlign = 'left'; 
-                }
+                    const maxNameWidth = 280;
+                    const nameTxt = this._getTruncatedText(item, maxNameWidth);
+                    if (nameTxt) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillText(nameTxt, x - 60, y + h / 2);
+                    }
 
-                const finalW = store.layoutW[soaIdx];
-                const txt = this._getTruncatedText(item, finalW);
-                if (txt) {
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillText(txt, x + 10, y + h / 2); 
-                }
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.fillText('#' + String(rank), x - 30, y + h / 2);
 
-                if (this.currentMode === 'rating') {
+                    ctx.textAlign = 'left';
                     let valStr = '';
                     if (this.ratingMetric === 'bar_works') {
                         valStr = String(item.works);
@@ -422,11 +471,23 @@ export class Renderer {
                     } else if (this.ratingMetric === 'bar_productivity') {
                         valStr = (item.works / item.lifespan).toFixed(1) + ' в год';
                     }
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                    ctx.fillText(valStr, x + w + 15, y + h / 2);
+
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.fillText(valStr, x + 10, y + h / 2);
+
+                } else {
+                    // Режим таймлайна
+                    ctx.textAlign = 'left';
+                    const finalW = store.layoutW[soaIdx];
+                    const txt = this._getTruncatedText(item, finalW);
+                    if (txt) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillText(txt, x + 10, y + h / 2);
+                    }
                 }
             }
         }
+
         ctx.globalAlpha = 1.0;
     }
 
@@ -462,108 +523,171 @@ export class Renderer {
         ctx.restore();
     }
 
+    /**
+     * Построение мягкого рассеянного градиента эпох на основе данных из CSV
+     * Полностью динамический расчёт: без зашитых дат и без внешних зависимостей
+     */
+    /**
+     * Построение мягкого непрерывного фонового градиента
+     * Физическое смешивание пересекающихся эпох (Continuous Chronological Blend)
+     */
     _buildGradient(ppy) {
         if (!store.rawItems || store.rawItems.length === 0) return;
 
-        const eraStats = {};
+        // ================= НАСТРОЙКИ РАЗМЫТИЯ =================
+        const BLUR_RADIUS = 5; // Радиус перехода в годах (было 20). Меньше = четче, больше = более размыто
+        const BLUR_CUTOFF = 10; // Максимальная дальность растекания цвета в годах (было 45)
+        const STEP_YEARS  = 20; // Шаг сэмплирования таймлайна (было 15). Меньше шаг = детальнее границы
+        // =====================================================
+
+        // Вспомогательный парсер любого цвета (#HEX или hsl) в массив [R, G, B]
+        function parseToRgb(col) {
+            if (!col) return [127, 127, 127];
+            if (col.startsWith('#')) {
+                let hex = col.slice(1);
+                if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+                const num = parseInt(hex.slice(0, 6), 16);
+                return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+            }
+            if (col.startsWith('hsl')) {
+                const m = col.match(/\d+/g);
+                if (m) {
+                    const h = parseInt(m[0]) / 360;
+                    const s = parseInt(m[1]) / 100;
+                    const l = parseInt(m[2]) / 100;
+                    if (s === 0) return [Math.round(l * 255), Math.round(l * 255), Math.round(l * 255)];
+                    const hue2rgb = (p, q, t) => {
+                        let val = t;
+                        if (val < 0) val += 1;
+                        if (val > 1) val -= 1;
+                        if (val < 1/6) return p + (q - p) * 6 * val;
+                        if (val < 1/2) return q;
+                        if (val < 2/3) return p + (q - p) * (2/3 - val) * 6;
+                        return p;
+                    };
+                    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    const p = 2 * l - q;
+                    return [
+                        Math.round(hue2rgb(p, q, h + 1/3) * 255),
+                        Math.round(hue2rgb(p, q, h) * 255),
+                        Math.round(hue2rgb(p, q, h - 1/3) * 255)
+                    ];
+                }
+            }
+            return [127, 127, 127];
+        }
+
+        // 1. Формируем временные отрезки активности с учётом дат перехода
+        const segments = [];
+
         for (let i = 0; i < store.rawItems.length; i++) {
             const item = store.rawItems[i];
-            const era = item.era;
-            
-            if (!era || era.toLowerCase() === 'другое') continue;
-            
-            if (!eraStats[era]) {
-                eraStats[era] = { 
-                    minBirth: item.birth, 
-                    maxDeath: item.death, 
-                    color: item.colorEra 
-                };
+            const birth = item.birth;
+            const death = item.death;
+            const eras = item.parsedEras;
+            if (!eras || eras.length === 0) continue;
+
+            const soaIdx = item.soaBaseIdx;
+            const transYear = (store.transitionYears && store.transitionYears[soaIdx]) 
+                ? store.transitionYears[soaIdx] 
+                : (item.transitionYear || 0);
+
+            const isTrans = (transYear > birth && transYear < death && eras.length > 1);
+
+            if (isTrans) {
+                // До перелома — цвет 1-й эпохи
+                segments.push({
+                    start: birth,
+                    end: transYear,
+                    rgb: parseToRgb(item.colorEra)
+                });
+                // После перелома — цвет 2-й эпохи
+                const color2 = (store.instanceColor2 && store.instanceColor2[soaIdx]) 
+                    ? store.instanceColor2[soaIdx] 
+                    : item.colorEra2;
+                segments.push({
+                    start: transYear,
+                    end: death,
+                    rgb: parseToRgb(color2 || item.colorEra)
+                });
             } else {
-                if (item.birth < eraStats[era].minBirth) {
-                    eraStats[era].minBirth = item.birth;
-                }
-                if (item.death > eraStats[era].maxDeath) {
-                    eraStats[era].maxDeath = item.death;
-                }
+                segments.push({
+                    start: birth,
+                    end: death,
+                    rgb: parseToRgb(item.colorEra)
+                });
             }
         }
 
-        const dynamicBands = [];
-        for (const eraName in eraStats) {
-            const stat = eraStats[eraName];
-            const centerYear = (stat.minBirth + stat.maxDeath) / 2;
-            
-            dynamicBands.push({
-                name: eraName,
-                center: centerYear,
-                color: stat.color
-            });
-        }
+        if (segments.length === 0) return;
 
-        dynamicBands.sort(function(a, b) {
-            return a.center - b.center;
-        });
+        // 2. Сэмплирование хронологии каждые 15 лет для непрерывного смешивания
+        const startYear = 1050;
+        const endYear = 2050;
+        const totalSpan = endYear - startYear;
 
-        if (dynamicBands.length === 0) return;
+        const startX = startYear * ppy;
+        const endX = endYear * ppy;
 
-        const minYear = dynamicBands[0].center - 200; 
-        const maxYear = 2050; 
-        const maxSpan = maxYear - minYear;
-        
-        const startX = minYear * ppy;
-        const endX = maxYear * ppy;
-        
         this.bgGradient = this.ctx.createLinearGradient(startX, 0, endX, 0);
-        
-        // Используем полностью прозрачный базовый цвет вместо сплошного
-        this.bgGradient.addColorStop(0, '#15151500'); 
-        
-        const BLEND_YEARS = 40; 
 
-        for (let i = 0; i < dynamicBands.length; i++) {
-            const era = dynamicBands[i];
-            
-            let currentPos = (era.center - minYear) / maxSpan;
-            currentPos = Math.max(0, Math.min(1, currentPos));
-            
-            // Нативная прозрачность 12% (1F для HEX) вместо color-mix()
-            let darkBgColor;
-            if (era.color.startsWith('#')) {
-                darkBgColor = era.color + '1F'; 
-            } else if (era.color.startsWith('hsl')) {
-                darkBgColor = era.color.replace('hsl', 'hsla').replace(')', ', 0.12)');
-            } else {
-                darkBgColor = 'rgba(255, 255, 255, 0.12)';
+        for (let y = startYear; y <= endYear; y += STEP_YEARS) {
+            let totalWeight = 0;
+            let sumR = 0, sumG = 0, sumB = 0;
+
+            for (let j = 0; j < segments.length; j++) {
+                const seg = segments[j];
+                let w = 0;
+
+                if (y >= seg.start && y <= seg.end) {
+                    w = 1.0;
+                } else if (y < seg.start) {
+                    const dist = seg.start - y;
+                    if (dist < BLUR_CUTOFF) w = Math.exp(-0.5 * Math.pow(dist / BLUR_RADIUS, 2));
+                } else {
+                    const dist = y - seg.end;
+                    if (dist < BLUR_CUTOFF) w = Math.exp(-0.5 * Math.pow(dist / BLUR_RADIUS, 2));
+                }
+
+                if (w > 0) {
+                    sumR += seg.rgb[0] * w;
+                    sumG += seg.rgb[1] * w;
+                    sumB += seg.rgb[2] * w;
+                    totalWeight += w;
+                }
             }
-            
-            this.bgGradient.addColorStop(currentPos, darkBgColor);
-            
-            if (i < dynamicBands.length - 1) {
-                const nextEra = dynamicBands[i + 1];
-                const blendStartYear = nextEra.center - BLEND_YEARS;
-                const safeBlendYear = Math.max(era.center, blendStartYear);
-                
-                let holdPos = (safeBlendYear - minYear) / maxSpan;
-                holdPos = Math.max(0, Math.min(1, holdPos));
-                
-                if (holdPos < currentPos) holdPos = currentPos;
 
-                this.bgGradient.addColorStop(holdPos, darkBgColor);
+            // Позиция на градиентной ленте от 0.0 до 1.0
+            const pos = Math.max(0, Math.min(1, (y - startYear) / totalSpan));
+
+            if (totalWeight > 0) {
+                const r = Math.round(sumR / totalWeight);
+                const g = Math.round(sumG / totalWeight);
+                const b = Math.round(sumB / totalWeight);
+
+                // Мягкое появление из темноты до 1150 года и растворение после 2026 года
+                let alpha = 0.12;
+                if (y < 1110) {
+                    alpha = 0.12 * Math.max(0, (y - startYear) / 100);
+                } else if (y > 2026) {
+                    alpha = 0.12 * Math.max(0, (endYear - y) / 24);
+                }
+
+                this.bgGradient.addColorStop(pos, `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`);
             } else {
-                let holdPos = (2000 - minYear) / maxSpan;
-                holdPos = Math.max(0, Math.min(1, holdPos));
-                if (holdPos < currentPos) holdPos = currentPos;
-                
-                this.bgGradient.addColorStop(holdPos, darkBgColor);
+                this.bgGradient.addColorStop(pos, 'rgba(21, 21, 21, 0)');
             }
         }
-
-        this.bgGradient.addColorStop(1, '#15151500');
     }
 
     _drawErasBackground(ctx, minX, maxX, minY, maxY) {
         const ppy = LAYOUT_CONSTANTS.PIXELS_PER_YEAR;
-        
+        const currentYear = new Date().getFullYear();
+        const lineX = currentYear * ppy; // Координата красной линии настоящего года
+
+        // Если экран сдвинут полностью правее красной линии (в будущее) — фон не рисуем вообще
+        if (minX >= lineX) return;
+
         if (this.lastPPY !== ppy || !this.bgGradient) {
             this._buildGradient(ppy);
             this.lastPPY = ppy;
@@ -575,9 +699,14 @@ export class Renderer {
         
         const drawY = minY - 100;
         const drawH = (maxY - minY) + 200;
-        const drawW = maxX - minX;
         
-        ctx.fillRect(minX, drawY, drawW, drawH); 
+        // СТРОГО ОБРУБАЕМ правый край заливки ровно по красной линии (никаких цветов в будущем)
+        const rightX = Math.min(maxX, lineX);
+        const drawW = rightX - minX;
+        
+        if (drawW > 0) {
+            ctx.fillRect(minX, drawY, drawW, drawH);
+        }
     }
 
     _updateDOMDates(minX, maxX, scale) {
@@ -687,14 +816,18 @@ export class Renderer {
     }
 
     _getTruncatedText(item, boxWidth) {
-        if (item._lastW === boxWidth) return item._cachedText;
+        // Добавлен сброс кэша при смене языка (если потребуется)
+        if (item._lastW === boxWidth && item._lastLang === currentLang) return item._cachedText;
+        
+        // Выбираем правильное имя
+        const nameToRender = currentLang === 'ru' ? item.name : (item.engName || item.name);
         
         const padding = 20;
         const availableWidth = boxWidth - padding;
         
-        const fullWidth = this.ctx.measureText(item.name).width;
+        const fullWidth = this.ctx.measureText(nameToRender).width; // <-- используем nameToRender
         if (fullWidth <= availableWidth) {
-            item._cachedText = item.name;
+            item._cachedText = nameToRender;
         } else {
             const ellipsis = '...';
             const ew = this.ctx.measureText(ellipsis).width;
@@ -702,11 +835,11 @@ export class Renderer {
             if (availableWidth <= ew) {
                 item._cachedText = ''; 
             } else {
-                let l = 0, r = item.name.length;
+                let l = 0, r = nameToRender.length; // <-- используем nameToRender
                 let res = '';
                 while (l <= r) {
                     let m = (l + r) >> 1;
-                    let sub = item.name.substring(0, m);
+                    let sub = nameToRender.substring(0, m); // <-- используем nameToRender
                     if (this.ctx.measureText(sub).width + ew <= availableWidth) {
                         res = sub + ellipsis;
                         l = m + 1; 
@@ -719,6 +852,7 @@ export class Renderer {
         }
         
         item._lastW = boxWidth;
+        item._lastLang = currentLang; // <-- Кэшируем язык текста
         return item._cachedText;
     }
 
@@ -757,67 +891,110 @@ export class Renderer {
     }
 
     _drawRatingGroups(ctx, minX, maxX, minY, maxY, scale) {
-        if (this.currentMode !== 'rating' || !store.ratingGroups || store.ratingGroups.length <= 1) return;
-        if (store.ratingGroups[0].name === 'Общая') return;
+        if (this.currentMode !== 'rating' || !store.ratingMainGroups || store.ratingMainGroups.length === 0) return;
+        if (store.ratingMainGroups[0].name === 'Общая') return;
 
         const globalStats = store.globalStats;
         const sortBy = this.ratingMetric.replace('bar_', '');
+        const isEra = store.ratingGroupBy === 'era';
+
+        // Адаптивный масштаб для UI: при отдалении зума (scale < 1) 
+        // uiScale плавно растет, сохраняя читаемость текста на экране
+        const MIN_UI_SCALE = 1.0; 
+        const MAX_UI_SCALE = 4.5; 
+        const uiScale = Math.max(MIN_UI_SCALE, Math.min(1 / scale, MAX_UI_SCALE));
 
         ctx.save();
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'right';
         
-        for (let i = 0; i < store.ratingGroups.length; i++) {
-            const group = store.ratingGroups[i];
-            if (group.yEnd < minY || group.yStart > maxY) continue;
-
-            const lineX = -60;
-            
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-            ctx.lineWidth = 3 / scale; 
-            
-            ctx.beginPath();
-            ctx.moveTo(lineX, group.yStart);
-            ctx.lineTo(lineX, group.yEnd);
-            
-            ctx.moveTo(lineX - 10, group.yStart);
-            ctx.lineTo(lineX, group.yStart);
-            ctx.moveTo(lineX - 10, group.yEnd);
-            ctx.lineTo(lineX, group.yEnd);
-            ctx.stroke();
-
-            const screenPaddingWorld = 40 / scale;
-            let textY = group.yStart + 40;
-            const stickyY = Math.max(textY, minY + screenPaddingWorld + 30); 
-            textY = Math.max(group.yStart + 30, Math.min(stickyY, group.yEnd - 30));
-
-            ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(group.name, lineX - 25, textY - 25);
-            
-            ctx.font = '16px system-ui, -apple-system, sans-serif';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-
-            let stat1 = '';
-            let stat2 = '';
-            
-            if (sortBy === 'works') {
-                const pct = globalStats.works > 0 ? Math.round((group.works / globalStats.works) * 100) : 0;
-                stat1 = 'Произведений: ' + group.works + ' (' + pct + '%)';
-                stat2 = 'Авторов: ' + group.count;
-            } else if (sortBy === 'age') {
-                const avgAge = group.count > 0 ? Math.round(group.lifespan / group.count) : 0;
-                stat1 = 'Ср. возраст: ' + avgAge + ' лет';
-                stat2 = 'Авторов: ' + group.count;
-            } else if (sortBy === 'productivity') {
-                const avgProd = group.lifespan > 0 ? (group.works / group.lifespan).toFixed(1) : '0.0';
-                stat1 = 'В среднем: ' + avgProd + ' в год';
-                stat2 = 'Авторов: ' + group.count;
-            }
-
-            ctx.fillText(stat1, lineX - 25, textY);
-            ctx.fillText(stat2, lineX - 25, textY + 25);
+        // 1. Рисуем Главные группы (страны / эпохи)
+        for (let i = 0; i < store.ratingMainGroups.length; i++) {
+            this._drawSingleGroupLabel(ctx, store.ratingMainGroups[i], true, isEra, minY, maxY, scale, uiScale, globalStats, sortBy);
         }
+        // 2. Рисуем Подгруппы (Ранний / Зрелый / Поздний романтизм и т.д.)
+        for (let i = 0; i < store.ratingSubGroups.length; i++) {
+            this._drawSingleGroupLabel(ctx, store.ratingSubGroups[i], false, isEra, minY, maxY, scale, uiScale, globalStats, sortBy);
+        }
+        
         ctx.restore();
+    }
+
+    _drawSingleGroupLabel(ctx, group, isMain, isEra, minY, maxY, scale, uiScale, globalStats, sortBy) {
+        if (group.yEnd < minY || group.yStart > maxY) return;
+
+        // Проверяем, есть ли у главной эпохи вложенные подгруппы
+        const hasSubgroups = isEra && isMain && (group.name.includes('Романтизм') || group.name.includes('XX век'));
+
+        // Ближняя линия (-360): вплотную к левому краю фамилий (заканчивающихся на -340).
+        // Если у эпохи есть подгруппы, внешняя линия сдвигается левее на ширину блока подгруппы.
+        let lineX = -360;
+        if (hasSubgroups) {
+            lineX = -360 - (190 * uiScale);
+        }
+        
+        // Линия строго одинаковой толщины (2px на экране при любом зуме) для всех групп и подгрупп
+        ctx.strokeStyle = isMain ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2 / scale; 
+        
+        const offsetX = 16 * uiScale;
+        
+        // Прямая вертикальная линия: ровно от верха первого до низа последнего композитора группы
+        ctx.beginPath();
+        ctx.moveTo(lineX, group.yStart);
+        ctx.lineTo(lineX, group.yEnd);
+        ctx.stroke();
+
+        // Динамические размеры шрифтов и интервалов под текущий зум
+        const tSize = Math.round((isMain ? 22 : 16) * uiScale);
+        const sSize = Math.round((isMain ? 13 : 11) * uiScale);
+        const tGap = Math.round((isMain ? 26 : 18) * uiScale);
+        const sGap = Math.round((isMain ? 20 : 15) * uiScale);
+
+        const textBlockWorldHeight = tGap + sGap + (20 * uiScale);
+        const groupHeight = group.yEnd - group.yStart;
+        
+        // Вертикальное позиционирование текста (липкий заголовок при скролле)
+        let textY;
+        if (groupHeight <= textBlockWorldHeight) {
+            textY = group.yStart + (groupHeight / 2); 
+        } else {
+            const screenPaddingWorld = 35 * uiScale; 
+            const defaultTextY = group.yStart + (35 * uiScale); 
+            const stickyY = Math.max(defaultTextY, minY + screenPaddingWorld); 
+            textY = Math.max(
+                group.yStart + (25 * uiScale), 
+                Math.min(stickyY, group.yEnd - textBlockWorldHeight + (25 * uiScale))
+            );
+        }
+
+        // Заголовок группы
+        ctx.font = `bold ${tSize}px system-ui, -apple-system, sans-serif`;
+        ctx.fillStyle = isMain ? '#ffffff' : 'rgba(255, 255, 255, 0.75)'; 
+        ctx.fillText(group.name, lineX - offsetX, textY - tGap);
+        
+        // Строки статистики
+        ctx.font = `${sSize}px system-ui, -apple-system, sans-serif`;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+
+        let stat1 = '';
+        let stat2 = '';
+        
+        if (sortBy === 'works') {
+            const pct = globalStats.works > 0 ? Math.round((group.works / globalStats.works) * 100) : 0;
+            stat1 = `${t('works')}: ${group.works}` + (isMain ? ` (${pct}%)` : '');
+            stat2 = `${t('rankAuthors')} ${group.count}`;
+        } else if (sortBy === 'age') {
+            const avgAge = group.count > 0 ? Math.round(group.lifespan / group.count) : 0;
+            stat1 = `${t('rankAvgAge')} ${avgAge} ${t('years')}`;
+            stat2 = `${t('rankAuthors')} ${group.count}`;
+        } else if (sortBy === 'productivity') {
+            const avgProd = group.lifespan > 0 ? (group.works / group.lifespan).toFixed(1) : '0.0';
+            stat1 = `${t('rankAvgProd')} ${avgProd}`;
+            stat2 = `${t('rankAuthors')} ${group.count}`;
+        }
+
+        ctx.fillText(stat1, lineX - offsetX, textY);
+        ctx.fillText(stat2, lineX - offsetX, textY + sGap);
     }
 }

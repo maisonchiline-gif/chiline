@@ -80,13 +80,22 @@ class DataStore {
         this.ranks = null; // <-- НОВЫЙ МАССИВ ДЛЯ ХРАНЕНИЯ МЕСТА В РЕЙТИНГЕ
         
         this.instanceColor = null;
-        this.soaToRawMap = null; 
+        this.instanceColor2 = null; 
+        this.transitionYears = null;  
+        this.soaToRawMap = null;
 
         this.ratingGroups = [];
         this.globalStats = { works: 0, age: 0, count: 0 };
+
+        this.transitionYears = null; // Int16Array: точный год перехода (0 = нет перехода)
+        this.instanceColor2 = null;  // Array: цвет второй эпохи (hex / hsl)
     }
 
     allocateMemory(exactSize) {
+
+        this.transitionYears = new Int16Array(this.capacity);
+        this.instanceColor2 = new Array(this.capacity);
+
         this.capacity = exactSize;
         
         this.layoutX = new Float32Array(this.capacity);
@@ -103,6 +112,8 @@ class DataStore {
         this.animH = new Float32Array(this.capacity);
         
         this.instanceColor = new Array(this.capacity);
+        this.instanceColor2 = new Array(this.capacity);          // <-- ДОБАВИТЬ
+        this.transitionYears = new Int16Array(this.capacity);    // <-- ДОБАВИТЬ
         this.soaToRawMap = new Int32Array(this.capacity);
     }
 
@@ -173,7 +184,6 @@ class DataStore {
                 c.split(',').forEach(function(subC) {
                     const cleanName = subC.trim();
                     if (cleanName) {
-                        // Сохраняем оригинальные названия стран, чтобы UI мог разбить их на подгруппы
                         parsedCountries.push(cleanName);
                     }
                 });
@@ -183,6 +193,9 @@ class DataStore {
             
             const bestCountry = parsedCountries[0];
             const rawWorks = parseInt(r[8]) || 0;
+
+            // --- ДОБАВЛЕНО: Парсинг 10-й колонки года перехода ---
+            const rawTransitionYear = Utils.parseSafeYear(r[9]) || 0;
 
             const reqInstances = Math.max(1, parsedEras.length, parsedCountries.length);
 
@@ -203,6 +216,9 @@ class DataStore {
                 parsedCountries: parsedCountries,
                 primaryGroup: bestCountry,
                 colorEra: Utils.getColor('era', parsedEras[0]),
+                // --- ДОБАВЛЕНО: Второй цвет эпохи и год перехода ---
+                colorEra2: (parsedEras.length > 1) ? Utils.getColor('era', parsedEras[1]) : null,
+                transitionYear: rawTransitionYear,
                 colorCountry: Utils.getColor('country', bestCountry)
             });
             

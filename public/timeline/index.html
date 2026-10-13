@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#151515">
     <meta name="color-scheme" content="dark">
-    <title>Хронология Композиторов</title>
+    <title data-i18n="pageTitle">Хронология Композиторов</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -14,24 +14,23 @@
     <!-- ВЕРХНЯЯ ПАНЕЛЬ (ЕДИНЫЙ КОНТУР С ДАТАМИ) -->
     <div id="unified-header">
         
-        <!-- 1. МЕНЮ ТЕПЕРЬ СВЕРХУ -->
         <div id="top-bar-inner">
-            <button id="btn-jump-composers" class="top-nav-btn icon-btn" title="Отдалить камеру ко всем">
+            <button id="btn-jump-composers" class="top-nav-btn icon-btn" data-i18n-title="btnZoomAll" title="Отдалить камеру ко всем">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                     <polyline points="9 22 9 12 15 12 15 22"></polyline>
                 </svg>
             </button>
             
-            <div class="top-bar-title">Композиторов: <span id="total-count">...</span></div>
+            <div class="top-bar-title"><span data-i18n="composersCount">Композиторов:</span>&nbsp;<span id="total-count">...</span></div>
             
-            <button class="top-nav-btn icon-btn" data-target="drop-filters" title="Сортировка">
+            <button class="top-nav-btn icon-btn" data-target="drop-filters" data-i18n-title="btnSort" title="Сортировка">
                 <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                 </svg>
             </button>
 
-            <button class="top-nav-btn icon-btn" data-target="drop-appearance" title="Внешний вид">
+            <button class="top-nav-btn icon-btn" data-target="drop-appearance" data-i18n-title="btnAppearance" title="Внешний вид">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18.37 2.63a3 3 0 0 1 4.24 4.24l-9.19 9.19a2 2 0 0 1-1.42.59H9v-2.83a2 2 0 0 1 .59-1.41z"></path>
                     <path d="M14 6l4 4"></path>
@@ -39,7 +38,7 @@
                 </svg>
             </button>
 
-            <button id="btn-toggle-facts" class="top-nav-btn icon-btn" title="Факты">
+            <button id="btn-toggle-facts" class="top-nav-btn icon-btn" data-i18n-title="btnFacts" title="Факты">
                 <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 18h6"></path><path d="M10 22h4"></path>
                     <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path>
@@ -47,7 +46,7 @@
             </button>
 
             <div class="search-container">
-                <input type="text" id="ctrl-search" placeholder="Поиск..." autocomplete="off">
+                <input type="text" id="ctrl-search" data-i18n-placeholder="searchPlaceholder" placeholder="Поиск..." autocomplete="off">
                 <div id="search-results" class="search-dropdown"></div>
             </div>
         </div>
@@ -58,7 +57,7 @@
     <!-- ПАНЕЛЬ СОРТИРОВКИ -->
     <div id="drop-filters" class="dropdown-panel">
         <div class="filter-group">
-            <label for="ctrl-min-life">Возраст: от <span id="val-min-life">0</span> до <span id="val-max-life">120</span> лет</label>
+            <label for="ctrl-min-life"><span data-i18n="ageFrom">Возраст: от</span> <span id="val-min-life">0</span> <span data-i18n="to">до</span> <span id="val-max-life">120</span> <span data-i18n="yearsLabel">лет</span></label>
             <div class="dual-slider-wrapper">
                 <div class="dual-slider-track" id="track-life"></div>
                 <input type="range" id="ctrl-min-life" min="0" max="120" value="0">
@@ -67,7 +66,7 @@
         </div>
         <hr style="border: none; border-top: 1px solid color-mix(in srgb, var(--c-txt) 20%, transparent); margin: 15px 0;">
         <div class="filter-group">
-            <label for="ctrl-min-works">Произведений: от <span id="val-min-works">0</span> до <span id="val-max-works">1400+</span></label>
+            <label for="ctrl-min-works"><span data-i18n="worksFrom">Произведений: от</span> <span id="val-min-works">0</span> <span data-i18n="to">до</span> <span id="val-max-works">1400+</span></label>
             <div class="dual-slider-wrapper">
                 <div class="dual-slider-track" id="track-works"></div>
                 <input type="range" id="ctrl-min-works" min="0" max="1400" step="50" value="0">
@@ -77,16 +76,16 @@
         <hr style="border: none; border-top: 1px solid color-mix(in srgb, var(--c-txt) 20%, transparent); margin: 15px 0;">
         <div class="filter-group">
             <div class="filter-header">
-                <span class="filter-label" style="margin:0;">Эпохи:</span>
-                <a href="#" class="toggle-all" data-target="ctrl-era">Вкл/Выкл все</a>
+                <span class="filter-label" style="margin:0;" data-i18n="erasLabel">Эпохи:</span>
+                <a href="#" class="toggle-all" data-target="ctrl-era" data-i18n="toggleAll">Вкл/Выкл все</a>
             </div>
             <div id="ctrl-era" class="checkbox-container"></div>
         </div>
         <hr style="border: none; border-top: 1px solid color-mix(in srgb, var(--c-txt) 20%, transparent); margin: 15px 0;">
         <div class="filter-group">
             <div class="filter-header">
-                <span class="filter-label" style="margin:0;">Страны:</span>
-                <a href="#" class="toggle-all" data-target="ctrl-country">Вкл/Выкл все</a>
+                <span class="filter-label" style="margin:0;" data-i18n="countriesLabel">Страны:</span>
+                <a href="#" class="toggle-all" data-target="ctrl-country" data-i18n="toggleAll">Вкл/Выкл все</a>
             </div>
             <div id="ctrl-country" class="checkbox-container"></div>
         </div>
@@ -97,34 +96,34 @@
         
         <!-- ГЛАВНЫЙ РУБИЛЬНИК -->
         <div class="filter-group">
-            <span class="filter-label">Режим отображения:</span>
+            <span class="filter-label" data-i18n="displayMode">Режим отображения:</span>
             <div class="toggle-switch" id="ctrl-main-mode">
-                <button class="switch-btn active" data-val="timeline">Таймлайн</button>
-                <button class="switch-btn" data-val="rating">Рейтинг</button>
+                <button class="switch-btn active" data-val="timeline" data-i18n="modeTimeline">Таймлайн</button>
+                <button class="switch-btn" data-val="rating" data-i18n="modeRating">Рейтинг</button>
             </div>
         </div>
 
         <!-- ВЕТКА 1: ТАЙМЛАЙН -->
         <div id="branch-timeline">
             <div class="filter-group">
-                <span class="filter-label">Компоновка:</span>
+                <span class="filter-label" data-i18n="layout">Компоновка:</span>
                 <div class="toggle-switch" id="ctrl-timeline-layout">
-                    <button class="switch-btn active" data-val="compact">Компактно</button>
-                    <button class="switch-btn" data-val="linear">Списком</button>
+                    <button class="switch-btn active" data-val="compact" data-i18n="layoutCompact">Компактно</button>
+                    <button class="switch-btn" data-val="linear" data-i18n="layoutLinear">Списком</button>
                 </div>
             </div>
             <div class="filter-group">
-                <span class="filter-label">Группировка:</span>
+                <span class="filter-label" data-i18n="grouping">Группировка:</span>
                 <div class="toggle-switch" id="ctrl-timeline-grouping">
-                    <button class="switch-btn active" data-val="none">Общая</button>
-                    <button class="switch-btn" data-val="country">По странам</button>
+                    <button class="switch-btn active" data-val="none" data-i18n="groupNone">Общая</button>
+                    <button class="switch-btn" data-val="country" data-i18n="groupCountry">По странам</button>
                 </div>
             </div>
             <div class="filter-group">
-                <span class="filter-label">Сортировка:</span>
+                <span class="filter-label" data-i18n="sorting">Сортировка:</span>
                 <div class="toggle-switch" id="ctrl-timeline-sort">
-                    <button class="switch-btn active" data-val="birth">Рождение</button>
-                    <button class="switch-btn" data-val="death">Смерть</button>
+                    <button class="switch-btn active" data-val="birth" data-i18n="sortBirth">Рождение</button>
+                    <button class="switch-btn" data-val="death" data-i18n="sortDeath">Смерть</button>
                 </div>
             </div>
         </div>
@@ -132,19 +131,19 @@
         <!-- ВЕТКА 2: РЕЙТИНГ (СТАТИСТИКА) -->
         <div id="branch-rating" style="display:none;">
             <div class="filter-group">
-                <span class="filter-label">Показатель (Ось X):</span>
+                <span class="filter-label" data-i18n="xAxis">Показатель (Ось X):</span>
                 <div class="toggle-switch toggle-switch-col" id="ctrl-rating-metric">
-                    <button class="switch-btn active" data-val="bar_works">Произведения</button>
-                    <button class="switch-btn" data-val="bar_age">Годы жизни</button>
-                    <button class="switch-btn" data-val="bar_productivity">Продуктивность</button>
+                    <button class="switch-btn active" data-val="bar_works" data-i18n="metricWorks">Произведения</button>
+                    <button class="switch-btn" data-val="bar_age" data-i18n="metricAge">Годы жизни</button>
+                    <button class="switch-btn" data-val="bar_productivity" data-i18n="metricProductivity">Продуктивность</button>
                 </div>
             </div>
             <div class="filter-group">
-                <span class="filter-label">Группировка:</span>
+                <span class="filter-label" data-i18n="grouping">Группировка:</span>
                 <div class="toggle-switch toggle-switch-col" id="ctrl-rating-grouping">
-                    <button class="switch-btn active" data-val="none">Общая</button>
-                    <button class="switch-btn" data-val="country">По странам</button>
-                    <button class="switch-btn" data-val="era">По эпохам</button>
+                    <button class="switch-btn active" data-val="none" data-i18n="groupNone">Общая</button>
+                    <button class="switch-btn" data-val="country" data-i18n="groupCountry">По странам</button>
+                    <button class="switch-btn" data-val="era" data-i18n="groupEra">По эпохам</button>
                 </div>
             </div>
         </div>
@@ -153,21 +152,21 @@
         <hr style="border: none; border-top: 1px solid color-mix(in srgb, var(--c-txt) 20%, transparent); margin: 15px 0;">
         
         <div class="filter-group">
-            <span class="filter-label">Расцветка:</span>
+            <span class="filter-label" data-i18n="coloring">Расцветка:</span>
             <div class="toggle-switch" id="ctrl-color">
-                <button class="switch-btn active" data-val="era">Эпохи</button>
-                <button class="switch-btn" data-val="country">Страны</button>
+                <button class="switch-btn active" data-val="era" data-i18n="colorEra">Эпохи</button>
+                <button class="switch-btn" data-val="country" data-i18n="colorCountry">Страны</button>
             </div>
         </div>
         <!-- ПОЛЗУНОК МАСШТАБА ОТ -5 ДО +5 -->
         <div class="filter-group">
-            <label for="ctrl-width">Масштаб блоков:</label>
+            <label for="ctrl-width" data-i18n="blockScale">Масштаб блоков:</label>
             <input type="range" id="ctrl-width" min="-5" max="5" step="1" value="0">
         </div>
         
         <!-- КНОПКА ЭКСПОРТА (В СТИЛЕ ПЕРЕКЛЮЧАТЕЛЕЙ) -->
         <div class="toggle-switch" style="margin-top: 15px;">
-            <button id="btn-export-svg" class="action-btn">Экспорт в SVG</button>
+            <button id="btn-export-svg" class="action-btn" data-i18n="exportSVG">Экспорт в SVG</button>
         </div>
     </div>
 
@@ -185,11 +184,11 @@
     </div>
 
     <div id="facts-nav">
-        <button class="action-btn nav-btn-square" id="btn-first-fact" title="К первому факту">≪</button>
-        <button class="action-btn" id="btn-prev-fact">⬅ В прошлое</button>
-        <div id="fact-info-display">Режим композиторов</div>
-        <button class="action-btn" id="btn-next-fact">В будущее ➡</button>
-        <button class="action-btn nav-btn-square" id="btn-last-fact" title="В наше время">≫</button>
+        <button class="action-btn nav-btn-square" id="btn-first-fact" data-i18n-title="btnFirstFact" title="К первому факту">≪</button>
+        <button class="action-btn" id="btn-prev-fact" data-i18n="btnPrevFact">⬅ В прошлое</button>
+        <div id="fact-info-display" data-i18n="factModeInfo">Режим композиторов</div>
+        <button class="action-btn" id="btn-next-fact" data-i18n="btnNextFact">В будущее ➡</button>
+        <button class="action-btn nav-btn-square" id="btn-last-fact" data-i18n-title="btnLastFact" title="В наше время">≫</button>
     </div>
     
     <div id="tooltip"></div>
@@ -198,24 +197,24 @@
     <div id="premium-modal" class="premium-overlay">
         <div class="premium-content">
             <button id="btn-close-modal" class="premium-close">✖</button>
-            <h2 style="margin-top:0; margin-bottom: 15px; color: var(--c-accent); font-size: 1.5rem;">Поддержите проект!</h2>
+            <h2 style="margin-top:0; margin-bottom: 15px; color: var(--c-accent); font-size: 1.5rem;" data-i18n="premiumTitle">Поддержите проект!</h2>
             
-            <p>Мы вложили огромное количество времени и сил в создание этого интерактивного таймлайна: бережно собирали данные, настраивали алгоритмы укладки и продумывали каждую деталь дизайна.</p>
+            <p data-i18n="premiumP1">Мы вложили огромное количество времени и сил в создание этого интерактивного таймлайна: бережно собирали данные, настраивали алгоритмы укладки и продумывали каждую деталь дизайна.</p>
             
-            <p>У нас грандиозные планы по развитию проекта: добавление новых эпох, расширенная база композиторов, новые визуальные режимы и улучшенный интерфейс!</p>
+            <p data-i18n="premiumP2">У нас грандиозные планы по развитию проекта: добавление новых эпох, расширенная база композиторов, новые визуальные режимы и улучшенный интерфейс!</p>
             
-            <p>Функции <strong>«Рейтинг»</strong> и <strong>«Экспорт в SVG»</strong> доступны по специальному коду. Оформив подписку на нашем <a href="https://boosty.to/" target="_blank">Boosty</a>, вы получите полный доступ ко всем скрытым функциям и напрямую поможете проекту расти. Спасибо, что вы с нами!</p>
+            <p><span data-i18n="premiumP3_1">Функции <strong>«Рейтинг»</strong> и <strong>«Экспорт в SVG»</strong> доступны по специальному коду. Оформив подписку на нашем </span><a href="https://boosty.to/" target="_blank">Boosty</a><span data-i18n="premiumP3_2">, вы получите полный доступ ко всем скрытым функциям и напрямую поможете проекту расти. Спасибо, что вы с нами!</span></p>
             
             <div class="premium-input-group">
-                <input type="text" id="premium-code-input" placeholder="Введите код с Boosty..." autocomplete="off">
-                <button id="btn-submit-code" class="action-btn">Разблокировать</button>
+                <input type="text" id="premium-code-input" data-i18n-placeholder="premiumPlaceholder" placeholder="Введите код с Boosty..." autocomplete="off">
+                <button id="btn-submit-code" class="action-btn" data-i18n="premiumUnlock">Разблокировать</button>
             </div>
-            <div id="premium-error" style="color: var(--c-accent); font-size: 0.8rem; margin-top: 10px; display: none;">Неверный код. Попробуйте еще раз или проверьте подписку на Boosty.</div>
+            <div id="premium-error" style="color: var(--c-accent); font-size: 0.8rem; margin-top: 10px; display: none;" data-i18n="premiumError">Неверный код. Попробуйте еще раз или проверьте подписку на Boosty.</div>
         </div>
     </div>
     
-
     <!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ -->
+    <script type="module" src="i18n.js"></script>
     <script type="module" src="data.js"></script>
     <script type="module" src="layout.js"></script>
     <script type="module" src="camera.js"></script>
