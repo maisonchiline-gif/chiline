@@ -190,6 +190,9 @@ class LayoutEngine {
                     this.store.instanceColor2[soaIdx] = null;
                     this.store.transitionYears[soaIdx] = 0;
                 }
+
+                this.store.activeStartYears[soaIdx] = (item.activeStart > item.birth && item.activeStart < item.death) ? item.activeStart : 0;
+                this.store.activeEndYears[soaIdx] = (item.activeEnd > item.birth && item.activeEnd < item.death) ? item.activeEnd : 0;
                 
                 instanceOffset++;
             }
@@ -244,14 +247,12 @@ class LayoutEngine {
                 if (mainA !== mainB) {
                     // --- СТРАНЫ ---
                     if (groupBy === 'country') {
-                        if (mode === 'rating') {
-                            // Чем больше авторов у страны, тем она выше (меньший Y)
-                            const diff = mainCounts[mainB] - mainCounts[mainA];
-                            if (diff !== 0) return diff;
-                            return mainA.localeCompare(mainB);
-                        }
-                        // В таймлайне оставляем хронологический порядок появления стран
-                        const diff = mainEarliest[mainA] - mainEarliest[mainB];
+                        // Сборная группа малочисленных стран «Другие» всегда в самом низу
+                        if (mainA === 'Другие') return 1;
+                        if (mainB === 'Другие') return -1;
+
+                        // Страна с бОльшим количеством композиторов всегда выше (меньший Y)
+                        const diff = mainCounts[mainB] - mainCounts[mainA];
                         if (diff !== 0) return diff;
                         return mainA.localeCompare(mainB);
                     }
@@ -314,10 +315,21 @@ class LayoutEngine {
         this.trackEndsPos.fill(-Infinity);
         this.trackEndsNeg.fill(-Infinity);
         
+        // Подсчитываем размер каждой группы, чтобы в режиме «Списком»
+        // выстраивать композиторов снизу вверх внутри своей страны
+        const groupSizes = {};
+        if (groupBy !== 'none' && !compact) {
+            for (let i = 0; i < this.store.filteredCount; i++) {
+                const g = this.store.filteredItems[i].group;
+                groupSizes[g] = (groupSizes[g] || 0) + 1;
+            }
+        }
+
         let currentGroup = null;
         let globalTrackOffset = 0;
         let maxTrackInCurrentGroup = 0;
         let maxUsedTrack = 0;
+        let indexInCurrentGroup = 0;
 
         for (let i = 0; i < this.store.filteredCount; i++) {
             const inst = this.store.filteredItems[i];
@@ -349,7 +361,7 @@ class LayoutEngine {
                     }
                 } else {
                     const half = Math.floor(this.store.filteredCount / 2);
-                    // ПУНКТ 2: Инверсия для списка без группировки (снизу вверх)
+                    // Без группировки: список идёт снизу вверх
                     trackIdx = half - i;
                 }
                 
@@ -360,14 +372,17 @@ class LayoutEngine {
                 this.store.trackIndices[soaIdx] = trackIdx;
                 this.store.ranks[soaIdx] = 0;
             } else {
-                let itemGroup = inst.group;
-                if (currentGroup !== null && currentGroup !== itemGroup) {
-                    globalTrackOffset += maxTrackInCurrentGroup + 1;
-                    globalTrackOffset += Math.ceil(GROUP_GAP / (TRACK_HEIGHT + TRACK_GAP)); 
-                    maxTrackInCurrentGroup = 0;
-                    this.trackEndsPos.fill(-Infinity); 
+                const itemGroup = inst.group;
+                if (currentGroup !== itemGroup) {
+                    if (currentGroup !== null) {
+                        globalTrackOffset += maxTrackInCurrentGroup + 1;
+                        globalTrackOffset += Math.ceil(GROUP_GAP / (TRACK_HEIGHT + TRACK_GAP)); 
+                        maxTrackInCurrentGroup = 0;
+                        this.trackEndsPos.fill(-Infinity); 
+                    }
+                    currentGroup = itemGroup;
+                    indexInCurrentGroup = 0;
                 }
-                currentGroup = itemGroup;
 
                 if (compact) {
                     let d = 0;
@@ -376,20 +391,17 @@ class LayoutEngine {
                     trackIdx = d;
                     this.trackEndsPos[d] = x + w;
                 } else {
-                    if (i === 0 || currentGroup !== itemGroup) trackIdx = 0;
-                    else trackIdx = maxTrackInCurrentGroup + 1;
+                    // Внутри страны каждый новый композитор располагается выше предыдущего (снизу вверх),
+                    // но сами страны остаются на своих местах сверху вниз
+                    const groupSize = groupSizes[itemGroup] || 1;
+                    trackIdx = (groupSize - 1) - indexInCurrentGroup;
+                    indexInCurrentGroup++;
                 }
 
                 if (trackIdx > maxTrackInCurrentGroup) maxTrackInCurrentGroup = trackIdx;
                 
-                let finalTrackIndex = globalTrackOffset + trackIdx;
-                
-                // ПУНКТ 2: Инверсия для списка с группировкой (снизу вверх)
-                if (!compact) {
-                    finalTrackIndex = -finalTrackIndex;
-                }
-
-                if (Math.abs(finalTrackIndex) > maxUsedTrack) maxUsedTrack = Math.abs(finalTrackIndex);
+                const finalTrackIndex = globalTrackOffset + trackIdx;
+                if (finalTrackIndex > maxUsedTrack) maxUsedTrack = finalTrackIndex;
 
                 this.store.layoutX[soaIdx] = x;
                 this.store.layoutY[soaIdx] = finalTrackIndex * (TRACK_HEIGHT + TRACK_GAP) - (TRACK_HEIGHT / 2);
@@ -400,20 +412,14 @@ class LayoutEngine {
             }
         }
 
+        // Центрирование относительно экватора (Y = 0) одинаково для обоих режимов
         if (groupBy !== 'none') {
             const offset = Math.floor(maxUsedTrack / 2);
             const yOffsetPx = offset * (TRACK_HEIGHT + TRACK_GAP);
             for (let i = 0; i < this.store.filteredCount; i++) {
                 const soaIdx = this.store.filteredItems[i].soaIdx;
-                
-                // ПУНКТ 2: Корректировка смещения для центровки инвертированного списка
-                if (!compact) {
-                    this.store.layoutY[soaIdx] += yOffsetPx;
-                    this.store.trackIndices[soaIdx] += offset;
-                } else {
-                    this.store.layoutY[soaIdx] -= yOffsetPx;
-                    this.store.trackIndices[soaIdx] -= offset;
-                }
+                this.store.layoutY[soaIdx] -= yOffsetPx;
+                this.store.trackIndices[soaIdx] -= offset;
             }
         }
     }

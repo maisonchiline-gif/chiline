@@ -10,6 +10,57 @@ const ERA_COLORS = { "Средневековье": "#5d4037", "Возрожде�
 const COUNTRY_COLORS = { "Германия": "#b17719", "Австрия": "#f9a825", "франция": "#1565c0","нидерланды": "#0d3a6e", "италия": "#d84315", "россия": "#2e7d32", "великобритания": "#9467bd", "Польша": "#8c564b", "США": "#e377c2", "чехия": "#60703a", "испания": "#bcbd22", "Другое": "#7f7f7f" };
 
 const Utils = {
+
+    _darkCache: {},
+
+    darkenColor: function(col, factor = 0.35) {
+        if (!col) return '#222222';
+        const cacheKey = col + '_' + factor;
+        if (this._darkCache[cacheKey]) return this._darkCache[cacheKey];
+
+        let r = 127, g = 127, b = 127;
+
+        if (col.startsWith('#')) {
+            let hex = col.slice(1);
+            if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+            const num = parseInt(hex.slice(0, 6), 16);
+            r = (num >> 16) & 255;
+            g = (num >> 8) & 255;
+            b = num & 255;
+        } else if (col.startsWith('hsl')) {
+            const m = col.match(/\d+/g);
+            if (m) {
+                const h = parseInt(m[0]) / 360;
+                const s = parseInt(m[1]) / 100;
+                const l = parseInt(m[2]) / 100;
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = Math.round(hue2rgb(p, q, h + 1/3) * 255);
+                g = Math.round(hue2rgb(p, q, h) * 255);
+                b = Math.round(hue2rgb(p, q, h - 1/3) * 255);
+            }
+        }
+
+        // Смешиваем оригинальный цвет с глубоким темным фоном (#121212)
+        const bg = 18;
+        const dr = Math.round(bg + (r - bg) * factor);
+        const dg = Math.round(bg + (g - bg) * factor);
+        const db = Math.round(bg + (b - bg) * factor);
+
+        const toHex = n => Math.max(0, Math.min(255, n)).toString(16).padStart(2, '0');
+        const res = '#' + toHex(dr) + toHex(dg) + toHex(db);
+        this._darkCache[cacheKey] = res;
+        return res;
+    },
+
     parseCSV: function(str) {
         const arr = [];
         let quote = false, row = 0, col = 0;
@@ -81,11 +132,14 @@ class DataStore {
         
         this.instanceColor = null;
         this.instanceColor2 = null; 
-        this.transitionYears = null;  
+        this.transitionYears = null;
+        this.activeStartYears = null; // <-- ДОБАВИТЬ: Год начала творчества
+        this.activeEndYears = null;   // <-- ДОБАВИТЬ: Год окончания творчества  
         this.soaToRawMap = null;
 
         this.ratingGroups = [];
         this.globalStats = { works: 0, age: 0, count: 0 };
+        this.tchaikovskyWorks = [];
 
         this.transitionYears = null; // Int16Array: точный год перехода (0 = нет перехода)
         this.instanceColor2 = null;  // Array: цвет второй эпохи (hex / hsl)
@@ -112,8 +166,10 @@ class DataStore {
         this.animH = new Float32Array(this.capacity);
         
         this.instanceColor = new Array(this.capacity);
-        this.instanceColor2 = new Array(this.capacity);          // <-- ДОБАВИТЬ
-        this.transitionYears = new Int16Array(this.capacity);    // <-- ДОБАВИТЬ
+        this.instanceColor2 = new Array(this.capacity);
+        this.transitionYears = new Int16Array(this.capacity);
+        this.activeStartYears = new Int16Array(this.capacity); // <-- ДОБАВИТЬ
+        this.activeEndYears = new Int16Array(this.capacity);   // <-- ДОБАВИТЬ
         this.soaToRawMap = new Int32Array(this.capacity);
     }
 
@@ -121,7 +177,22 @@ class DataStore {
         return this.rawItems[this.soaToRawMap[soaIdx]];
     }
 
-    async load(csvText, factsJsonText) {
+    async load(csvText, factsJsonText, thCsvText) {
+
+        if (thCsvText) {
+            const thRaw = Utils.parseCSV(thCsvText);
+            thRaw.shift(); // Пропускаем заголовки
+            
+            thRaw.forEach(r => {
+                const title = r[0] || r[1]; // Название или Заголовок
+                const year = Utils.parseSafeYear(r[2]); // Год создания (индекс 2)
+                
+                if (title && year !== null) {
+                    this.tchaikovskyWorks.push({ title, year });
+                }
+            });
+        }
+        
         try {
             this.facts = JSON.parse(factsJsonText);
             this.facts.sort(function(a, b) { return b.year - a.year; });
@@ -194,8 +265,9 @@ class DataStore {
             const bestCountry = parsedCountries[0];
             const rawWorks = parseInt(r[8]) || 0;
 
-            // --- ДОБАВЛЕНО: Парсинг 10-й колонки года перехода ---
             const rawTransitionYear = Utils.parseSafeYear(r[9]) || 0;
+            const rawActiveStart = Utils.parseSafeYear(r[10]) || 0;
+            const rawActiveEnd = Utils.parseSafeYear(r[11]) || 0;
 
             const reqInstances = Math.max(1, parsedEras.length, parsedCountries.length);
 
@@ -216,9 +288,10 @@ class DataStore {
                 parsedCountries: parsedCountries,
                 primaryGroup: bestCountry,
                 colorEra: Utils.getColor('era', parsedEras[0]),
-                // --- ДОБАВЛЕНО: Второй цвет эпохи и год перехода ---
                 colorEra2: (parsedEras.length > 1) ? Utils.getColor('era', parsedEras[1]) : null,
                 transitionYear: rawTransitionYear,
+                activeStart: rawActiveStart, // <-- ДОБАВИТЬ
+                activeEnd: rawActiveEnd,     // <-- ДОБАВИТЬ
                 colorCountry: Utils.getColor('country', bestCountry)
             });
             

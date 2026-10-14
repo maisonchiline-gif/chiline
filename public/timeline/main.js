@@ -3,7 +3,7 @@
  * ШАГ 6: UI КОНТРОЛЛЕР И ИНТЕГРАЦИЯ (main.js)
  * ==========================================
  */
-import { currentLang, t } from './i18n.js';
+import { currentLang, t, tData, getComposerName, initAutoTranslate } from './i18n.js';
 import { store } from './data.js';
 import { layoutEngine, LAYOUT_CONSTANTS } from './layout.js';
 import { spatialIndex } from './spatial.js';
@@ -59,14 +59,30 @@ const popupUI = {
 let isPremiumUnlocked = localStorage.getItem('composer_premium') === 'true';
 
 function applyTranslations() {
-    // Перевод элементов с атрибутом data-i18n
+    document.documentElement.lang = currentLang;
+
+    // Перевод текстовых узлов (с поддержкой HTML-тегов внутри premiumP3_1)
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        el.textContent = t(key);
+        const val = t(key);
+        if (val.includes('<')) {
+            el.innerHTML = val;
+        } else {
+            el.textContent = val;
+        }
     });
-    // Перевод плейсхолдера поиска
-    const searchInput = document.getElementById('ctrl-search');
-    if (searchInput) searchInput.placeholder = t('searchPlaceholder');
+
+    // Перевод всплывающих подсказок (title) у иконок шапки и навигации фактов
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const key = el.getAttribute('data-i18n-title');
+        el.setAttribute('title', t(key));
+    });
+
+    // Перевод всех placeholder (поиск и поле ввода кода Boosty)
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        el.setAttribute('placeholder', t(key));
+    });
 }
 
 function setHomeActive() {
@@ -131,16 +147,15 @@ function openComposerPopup(soaIdx) {
     if (age <= 0) age = 1; 
 
     const wPerYear = (comp.works / age).toFixed(1);
-    const displayName = currentLang === 'ru' ? comp.name : (comp.engName || comp.name);
+    const displayName = getComposerName(comp);
     
-    // Если русский, показываем "Имя (Eng)", если англ — только "Eng"
     popupUI.title.textContent = currentLang === 'ru' 
         ? comp.name + (comp.engName ? ' (' + comp.engName + ')' : '') 
         : displayName;
 
     popupUI.dates.textContent = `${t('lifespan')}: ${comp.birth} - ${comp.death} (${age} ${t('years')})`;
-    popupUI.era.textContent = `${t('era')}: ${comp.era}`;
-    popupUI.country.textContent = `${t('country')}: ${comp.country}`;
+    popupUI.era.textContent = `${t('era')}: ${tData(comp.era)}`;
+    popupUI.country.textContent = `${t('country')}: ${tData(comp.country)}`;
     popupUI.worksCount.textContent = `${t('works')}: ${comp.works}`;
     popupUI.worksPerYear.textContent = `${t('avgPerYear')}: ${wPerYear}`;
 
@@ -200,12 +215,15 @@ async function bootstrap() {
     renderer = new Renderer(canvas, camera);
 
     try {
-        const [csvRes, factsRes] = await Promise.all([
+        // Добавлена загрузка TH.csv
+        const [csvRes, factsRes, thRes] = await Promise.all([
             fetch('composer.csv'),
-            fetch('facts.json')
+            fetch('facts.json'),
+            fetch('TH.csv') 
         ]);
         
-        await store.load(await csvRes.text(), await factsRes.text());
+        // Передаем текст TH.csv третьим аргументом
+        await store.load(await csvRes.text(), await factsRes.text(), await thRes.text());
         
         let minL = Infinity, maxL = -Infinity;
         let minW = Infinity, maxW = -Infinity;
@@ -255,6 +273,13 @@ async function bootstrap() {
     bindEvents();
     updateCore();
     zoomToFit('instant');
+
+    // Асинхронно догружаем перевод фактов и дополнительных языков мира без блокировки рендера
+    initAutoTranslate(store.facts).then(() => {
+        applyTranslations();
+        buildDynamicCheckboxes(); // Перестраиваем подписи чекбоксов на целевом языке
+        if (renderer) renderer.requestRender();
+    });
 }
 
 function initWidthSlider() {
@@ -450,7 +475,7 @@ function buildDynamicCheckboxes() {
         }
         
         lbl.appendChild(chk);
-        lbl.appendChild(document.createTextNode(' ' + opts.text + ' '));
+        lbl.appendChild(document.createTextNode(' ' + tData(opts.text) + ' '));
         
         const cnt = document.createElement('span');
         cnt.style.color = '#777';
@@ -901,10 +926,11 @@ function bindEvents() {
             matches.forEach(function(match) {
                 const div = document.createElement('div');
                 div.className = 'search-item';
-                div.textContent = match.name + ' (' + match.birth + ' - ' + match.death + ')';
+                const displayMatchName = getComposerName(match);
+                div.textContent = displayMatchName + ' (' + match.birth + ' - ' + match.death + ')';
                 
                 div.addEventListener('click', function() {
-                    searchInput.value = match.name;
+                    searchInput.value = displayMatchName;
                     searchResults.classList.remove('visible');
                     
                     searchInput.blur();
@@ -1000,21 +1026,38 @@ function bindEvents() {
             const isDoubleTap = (now - lastCanvasTapTime < 400);
             
             if (renderer.activeSoaIdx !== null) {
-                if (isDoubleTap && lastCanvasTapIdx === renderer.activeSoaIdx) {
-                    openComposerPopup(renderer.activeSoaIdx);
+                const activeItem = store.getRawItemBySoaIdx(renderer.activeSoaIdx);
+                
+                // РАЗРЕШАЕМ ПРОВАЛИВАТЬСЯ ТОЛЬКО В ЧАЙКОВСКОГО
+                if (isDoubleTap && lastCanvasTapIdx === renderer.activeSoaIdx && activeItem.name === 'Чайковский') {
+                    closeComposerPopup();
+                    renderer.toggleFocusMode(renderer.activeSoaIdx);
                     
-                    // Плавный полет при двойном клике ТОЛЬКО НА МОБИЛЬНЫХ
-                    const isPortrait = window.innerHeight > window.innerWidth;
-                    if (isPortrait) {
+                    if (renderer.focusedSoaIdx !== null) {
                         const targetX = store.layoutX[renderer.activeSoaIdx];
                         const targetY = store.layoutY[renderer.activeSoaIdx];
-                        camera.flyTo(targetX, targetY, 0.5);
+                        const targetW = store.layoutW[renderer.activeSoaIdx];
+                        
+                        const rect = renderer.canvas.getBoundingClientRect();
+                        const isPortrait = rect.height > rect.width;
+                        const padRatio = isPortrait ? 0.05 : 0.15; 
+                        
+                        const availableScreenW = rect.width * (1 - padRatio * 2);
+                        let perfectScale = availableScreenW / targetW;
+                        
+                        perfectScale = Math.min(perfectScale, camera.maxScale * 1.5);
+                        const centerLifeX = targetX + (targetW / 2);
+                        
+                        camera.flyTo(centerLifeX, targetY - 60, perfectScale, 'epic'); 
                         setHomeActive();
                     }
                 } else {
-                    closeComposerPopup();
+                    // Обычный клик (или двойной по другим композиторам) — просто карточка
+                    if (renderer.focusedSoaIdx !== null) renderer.toggleFocusMode(null);
+                    openComposerPopup(renderer.activeSoaIdx);
                 }
             } else {
+                if (renderer.focusedSoaIdx !== null) renderer.toggleFocusMode(null);
                 closeComposerPopup();
             }
 
@@ -1127,10 +1170,10 @@ function activateFact(index) {
         store.facts.forEach(function(f, i) { f.highlight = (i === index); });
         renderer.requestRender();
 
-        const yearSuffix = fact.year < 0 ? ' до н.э.' : ' г.';
+        const yearSuffix = fact.year < 0 ? t('bcSuffix') : t('adSuffix');
         document.getElementById('fact-card-year').textContent = Math.abs(fact.year) + yearSuffix;
-        document.getElementById('fact-card-title').textContent = fact.title;
-        document.getElementById('fact-card-text').textContent = fact.text;
+        document.getElementById('fact-card-title').textContent = (currentLang !== 'ru' && fact.titleTranslated) ? fact.titleTranslated : fact.title;
+        document.getElementById('fact-card-text').textContent = (currentLang !== 'ru' && fact.textTranslated) ? fact.textTranslated : fact.text;
         
         card.style.transition = 'opacity 0.15s ease-out, transform 0.15s ease-out';
         card.classList.add('visible');
@@ -1223,7 +1266,7 @@ function zoomToFit(mode) {
 
 function generateAndDownloadSVG() {
     if (store.filteredCount === 0) {
-        alert("Нет данных для экспорта");
+        alert(t('noDataExport'));
         return;
     }
     
@@ -1264,7 +1307,7 @@ function generateAndDownloadSVG() {
         text.setAttribute("font-family", "system-ui, sans-serif");
         text.setAttribute("font-size", "20");
         text.setAttribute("font-weight", "600");
-        text.textContent = item.name; 
+        text.textContent = getComposerName(item);
         
         g.appendChild(rect);
         g.appendChild(text);
@@ -1320,7 +1363,7 @@ function initPremiumModal() {
             localStorage.setItem('composer_premium', 'true');
             isPremiumUnlocked = true;
             modal.classList.remove('visible');
-            alert('Спасибо за поддержку! Функции "Рейтинг" и "Экспорт" успешно разблокированы.');
+            alert(t('premiumSuccess'));
         } else {
             errorMsg.style.display = 'block';
         }

@@ -3,8 +3,9 @@
  * ШАГ 5: RENDER LOOP & CANVAS 2D
  * ==========================================
  */
-import { currentLang, t } from './i18n.js';
-import { store } from './data.js';
+
+import { currentLang, t, tData } from './i18n.js';
+import { store, Utils } from './data.js';
 import { spatialIndex } from './spatial.js';
 import { LAYOUT_CONSTANTS } from './layout.js';
 
@@ -35,7 +36,255 @@ export class Renderer {
         this._handlePointerMove = this._handlePointerMove.bind(this);
         this._handleClick = this._handleClick.bind(this);
 
+        this.focusedSoaIdx = null;       // Кто сейчас в фокусе (будет только Чайковский)
+        this.focusAnimProgress = 0;      // Анимация плавного появления
+        this.focusedData = null;         // Кэш с координатами реальных звёзд
+        this.hoveredFocusDot = null;
+
         this._init();
+    }
+
+    toggleFocusMode(soaIdx) {
+        if (this.focusedSoaIdx === soaIdx) {
+            this.focusedSoaIdx = null;
+        } else {
+            this.focusedSoaIdx = soaIdx;
+            this._generateWorksDistribution(soaIdx);
+        }
+        this.requestRender();
+    }
+
+    _generateWorksDistribution(soaIdx) {
+        const item = store.getRawItemBySoaIdx(soaIdx);
+        
+        if (item.name !== 'Чайковский' || store.tchaikovskyWorks.length === 0) {
+            this.focusedData = null;
+            return;
+        }
+
+        // ИСПРАВЛЕНИЕ: +1 год, чтобы включить год смерти (1893)
+        const yearsCount = Math.max(1, item.lifespan) + 1; 
+        
+        const worksByYear = Array.from({ length: yearsCount }, () => []);
+        let realWorksCount = 0;
+        let maxWorks = 1;
+
+        for (let i = 0; i < store.tchaikovskyWorks.length; i++) {
+            const work = store.tchaikovskyWorks[i];
+            const relativeYear = work.year - item.birth;
+            
+            // ИСПРАВЛЕНИЕ: теперь пропускаем все годы вплоть до yearsCount
+            if (relativeYear >= 0 && relativeYear < yearsCount) {
+                worksByYear[relativeYear].push(work);
+                realWorksCount++;
+                
+                if (worksByYear[relativeYear].length > maxWorks) {
+                    maxWorks = worksByYear[relativeYear].length;
+                }
+            }
+        }
+
+        if (realWorksCount === 0) {
+            this.focusedData = null;
+            return;
+        }
+
+        // Передаем yearsCount как lifespan, чтобы графика и хитбоксы работали корректно до самого конца
+        this.focusedData = { worksByYear, maxWorks, lifespan: yearsCount };
+    }
+
+    _hitTestFocusDot(worldX, worldY, scale) {
+        if (!this.focusedData || this.focusedSoaIdx === null) return null;
+        
+        const x = store.layoutX[this.focusedSoaIdx];
+        const y = store.layoutY[this.focusedSoaIdx];
+        const ppy = LAYOUT_CONSTANTS.PIXELS_PER_YEAR;
+
+        const gapY = (20 / scale) * this.focusAnimProgress; 
+        const baseY = y - gapY;
+        const dotSpacing = (12 / scale) * this.focusAnimProgress;
+        
+        // Зона срабатывания (hitbox) чуть больше самой точки, чтобы было легко попадать мышкой
+        const hitRadius = 6 / scale; 
+
+        const { worksByYear, lifespan } = this.focusedData;
+
+        // Определяем, в какой год мы сейчас целимся
+        const i = Math.round((worldX - x) / ppy);
+        
+        if (i >= 0 && i < lifespan) {
+            const px = x + (i * ppy);
+            // Если курсор находится над осью конкретного года
+            if (Math.abs(worldX - px) < hitRadius) {
+                const works = worksByYear[i];
+                // Ищем конкретную точку по высоте (w)
+                for (let w = 0; w < works.length; w++) {
+                    const py = baseY - (w * dotSpacing) - (dotSpacing / 2);
+                    if (Math.abs(worldY - py) < hitRadius) {
+                        return { work: works[w], px, py };
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    _drawFocusDetails(ctx, soaIdx, scale, progress) {
+        if (!this.focusedData) return;
+        
+        const x = store.layoutX[soaIdx];
+        const y = store.layoutY[soaIdx];
+        const ppy = LAYOUT_CONSTANTS.PIXELS_PER_YEAR;
+
+        const { worksByYear, maxWorks, lifespan } = this.focusedData;
+
+        ctx.save();
+        ctx.globalAlpha = progress;
+
+        // УВЕЛИЧЕНО с 20 до 28: Поднимаем всю базовую линию графика выше, чтобы влезли 2 строки текста
+        const gapY = (28 / scale) * progress; 
+        const baseY = y - gapY;
+        
+        const dotSpacing = (12 / scale) * progress; 
+        const dotRadius = 2.0 / scale;
+        const maxHeight = maxWorks * dotSpacing;
+
+        // --- ШАГ 1: ТОЧКИ ДЛЯ КРИВОЙ ГРАФИКА ---
+        const points = [];
+        points.push({ px: x - ppy, py: baseY });
+
+        for (let i = 0; i < lifespan; i++) {
+            const px = x + (i * ppy);
+            const count = worksByYear[i].length;
+            const py = baseY - (count * dotSpacing);
+            points.push({ px, py });
+        }
+
+        points.push({ px: x + (lifespan * ppy), py: baseY });
+
+        // --- ШАГ 2: ОТРИСОВКА ПЛАВНОЙ КРИВОЙ И ЗАЛИВКИ ---
+        ctx.beginPath();
+        ctx.moveTo(points[0].px, points[0].py);
+        
+        for (let i = 0; i < points.length - 1; i++) {
+            const p0 = points[i];
+            const p1 = points[i + 1];
+            const cx1 = p0.px + (p1.px - p0.px) / 2;
+            const cy1 = p0.py;
+            const cx2 = p0.px + (p1.px - p0.px) / 2;
+            const cy2 = p1.py;
+            ctx.bezierCurveTo(cx1, cy1, cx2, cy2, p1.px, p1.py);
+        }
+
+        ctx.lineTo(points[points.length - 1].px, baseY);
+        ctx.lineTo(points[0].px, baseY);
+        
+        const grad = ctx.createLinearGradient(0, baseY - maxHeight, 0, baseY);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
+        grad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(points[0].px, points[0].py);
+        for (let i = 0; i < points.length - 1; i++) {
+            const p0 = points[i];
+            const p1 = points[i + 1];
+            const cx1 = p0.px + (p1.px - p0.px) / 2;
+            const cy1 = p0.py;
+            const cx2 = p0.px + (p1.px - p0.px) / 2;
+            const cy2 = p1.py;
+            ctx.bezierCurveTo(cx1, cy1, cx2, cy2, p1.px, p1.py);
+        }
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 1.0 / scale;
+        ctx.stroke();
+
+        // --- ШАГ 3: ОТРИСОВКА ТОЧЕК-ПРОИЗВЕДЕНИЙ ---
+        for (let i = 0; i < lifespan; i++) {
+            const works = worksByYear[i];
+            if (works.length === 0) continue;
+            
+            const px = x + (i * ppy); 
+            
+            for (let w = 0; w < works.length; w++) {
+                const py = baseY - (w * dotSpacing) - (dotSpacing / 2);
+                
+                const isHovered = this.hoveredFocusDot && this.hoveredFocusDot.work === works[w];
+                
+                ctx.beginPath();
+                ctx.arc(px, py, isHovered ? (dotRadius * 2) : dotRadius, 0, Math.PI * 2);
+                ctx.fillStyle = isHovered ? '#d6102b' : '#ffffff';
+                ctx.fill();
+            }
+        }
+
+        // --- ШАГ 4: ОТРИСОВКА ЛЕТ И КОЛИЧЕСТВА ПРОИЗВЕДЕНИЙ ---
+        if (scale > 0.4) {
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            
+            const fontSize = Math.max(9, 10 / Math.sqrt(scale)); 
+            ctx.font = `600 ${fontSize}px system-ui, -apple-system, sans-serif`;
+            
+            for (let i = 0; i < lifespan; i++) {
+                const count = worksByYear[i].length;
+                if (count === 0) continue; 
+                
+                const px = x + (i * ppy);
+                
+                ctx.save();
+                ctx.translate(px, baseY + (3 / scale)); // Чуть прижимаем к линии, чтобы точно не задеть низ
+                ctx.scale(1 / scale, 1 / scale);
+                
+                // 1. Количество произведений (белая, сверху)
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+                ctx.fillText(`${count}`, 0, 0);
+                
+                // 2. Возраст (светло-серая, снизу)
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.fillText(`${i}`, 0, fontSize + 1);
+                
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+        
+        // --- ШАГ 5: ОТРИСОВКА ИНФОРМАЦИОННОГО POPUP'А (ТУЛТИПА) ---
+        if (this.hoveredFocusDot && this.hoveredFocusDot.work) {
+            const { px, py, work } = this.hoveredFocusDot;
+            const text = `${work.title} (${work.year})`;
+            
+            ctx.save();
+            ctx.translate(px, py);
+            ctx.scale(1 / scale, 1 / scale);
+            
+            ctx.font = '500 13px system-ui, -apple-system, sans-serif';
+            const tw = ctx.measureText(text).width;
+            
+            ctx.fillStyle = 'rgba(21, 21, 21, 0.9)';
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(10, -13, tw + 20, 26, 6);
+            } else {
+                ctx.rect(10, -13, tw + 20, 26);
+            }
+            ctx.fill();
+            
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 20, 0);
+            
+            ctx.restore();
+        }
+
+        ctx.restore();
     }
 
     _init() {
@@ -105,6 +354,7 @@ export class Renderer {
     requestRender() { this.needsRender = true; }
 
     _handlePointerMove(e) {
+        
         if (e.pointerType === 'touch') {
             if (this.hoveredSoaIdx !== null) {
                 this.hoveredSoaIdx = null;
@@ -116,6 +366,22 @@ export class Renderer {
         const sx = e.clientX - rect.left;
         const sy = e.clientY - rect.top;
         const world = this.camera.screenToWorld(sx, sy);
+
+        // --- НОВОЕ: Проверка наведения на точки произведений Чайковского ---
+        if (this.focusedSoaIdx !== null && this.focusAnimProgress > 0.5) {
+            const hitDot = this._hitTestFocusDot(world.x, world.y, this.camera.scale);
+            if (hitDot) {
+                if (!this.hoveredFocusDot || this.hoveredFocusDot.work !== hitDot.work) {
+                    this.hoveredFocusDot = hitDot;
+                    this.requestRender();
+                }
+                this.canvas.style.cursor = 'pointer';
+                return; // Останавливаем дальнейшие проверки, если попали в точку
+            } else if (this.hoveredFocusDot) {
+                this.hoveredFocusDot = null;
+                this.requestRender();
+            }
+        }
 
         const fact = this._hitTestFact(world.x, world.y, this.camera.scale);
         if (fact) {
@@ -192,6 +458,12 @@ export class Renderer {
         const factAnimStep = dt / 150; 
         let isFactAnimating = false;
 
+        const targetFocusAnim = this.focusedSoaIdx !== null ? 1.0 : 0.0;
+        if (Math.abs(this.focusAnimProgress - targetFocusAnim) > 0.001) {
+            this.focusAnimProgress += (targetFocusAnim - this.focusAnimProgress) * 0.08;
+            this.requestRender();
+        }
+
         for (let i = 0; i < store.facts.length; i++) {
             const fact = store.facts[i];
             if (fact.animProgress === undefined) fact.animProgress = 0;
@@ -209,7 +481,11 @@ export class Renderer {
             const item = store.getRawItemBySoaIdx(soaIdx); 
             let targetAlpha = 1.0;
 
-            if (activeComposer && soaIdx !== this.activeSoaIdx) {
+            if (this.focusedSoaIdx !== null) {
+                // Если мы провалились в Чайковского, всё остальное жестко гасим почти в ноль
+                targetAlpha = (soaIdx === this.focusedSoaIdx) ? 1.0 : 0.05; 
+            } else if (activeComposer && soaIdx !== this.activeSoaIdx) {
+                // Стандартное затенение композиторов, чья жизнь пересекается с выделенным
                 if (Math.max(activeComposer.birth, item.birth) > Math.min(activeComposer.death, item.death)) {
                     targetAlpha = 0.15;
                 }
@@ -286,7 +562,9 @@ export class Renderer {
             this._drawGrid(ctx, minX, maxX, minY, maxY, s);
             this._drawCurrentYearLine(ctx, minX, maxX, minY, maxY, s);
         }
-
+if (this.focusAnimProgress > 0.01 && this.focusedSoaIdx !== null) {
+            this._drawFocusDetails(ctx, this.focusedSoaIdx, s, this.focusAnimProgress);
+        }
         ctx.restore();
 
         if (this.currentMode === 'timeline') {
@@ -352,43 +630,84 @@ export class Renderer {
 
             ctx.globalAlpha = this.currentAlphas[soaIdx];
 
+            const actStart = store.activeStartYears ? store.activeStartYears[soaIdx] : 0;
+            const actEnd = store.activeEndYears ? store.activeEndYears[soaIdx] : 0;
+
             const isLiving = (item.death >= currentYear);
             const isTransitional = (isTimeline && transYear > 0 && color2);
+            const hasActiveStart = (isTimeline && actStart > item.birth && actStart < item.death);
+            const hasActiveEnd = (isTimeline && actEnd > item.birth && actEnd < item.death);
 
             // --- 1. СТИЛЬ ЗАЛИВКИ (FILL STYLE) ---
-            if (isTransitional) {
-                // Переходный период (включая ныне живущих, например, Сильвестрова)
+            if (isTransitional || hasActiveStart || hasActiveEnd) {
                 const lifespan = item.lifespan > 0 ? item.lifespan : 1;
-                const tCenter = (transYear - item.birth) / lifespan;
-                
-                // Окно сглаживания: ±4 года от точки смены стиля
-                const halfWindow = 4 / lifespan;
-                const stop1 = Math.max(0, Math.min(1, tCenter - halfWindow));
-                const stop2 = Math.max(stop1, Math.min(1, tCenter + halfWindow));
+                // Полуширина окна плавного перехода: ±3.5 года (но не более 12% длины жизни)
+                const halfWin = Math.min(0.12, 3.5 / lifespan);
+
+                const c1 = instColor;
+                const c2 = isTransitional ? color2 : instColor;
+                const darkC1 = Utils.darkenColor(c1, 0.35);
+                const darkC2 = Utils.darkenColor(c2, 0.35);
 
                 const grad = ctx.createLinearGradient(x, 0, x + w, 0);
-                grad.addColorStop(0, instColor);
-                grad.addColorStop(stop1, instColor);
-                grad.addColorStop(stop2, color2);
+                let lastStop = 0;
+
+                // Функция безопасного добавления стопа (гарантирует монотонность 0..1)
+                const addStop = (pos, col) => {
+                    const clamped = Math.max(lastStop, Math.min(1, pos));
+                    grad.addColorStop(clamped, col);
+                    lastStop = clamped;
+                };
+
+                // А. Старт плашки (год рождения)
+                addStop(0, hasActiveStart ? darkC1 : c1);
+
+                // Б. Переход от детства/юности к началу творчества (Тёмный -> Яркий)
+                if (hasActiveStart) {
+                    const tStart = (actStart - item.birth) / lifespan;
+                    addStop(tStart - halfWin, darkC1);
+                    addStop(tStart + halfWin, c1);
+                }
+
+                // В. Переход между эпохами, если он есть (Эпоха 1 -> Эпоха 2)
+                if (isTransitional) {
+                    const tTrans = (transYear - item.birth) / lifespan;
+                    // Учитываем, не случился ли переход уже в затемнённой фазе
+                    const isDarkBefore = (hasActiveStart && tTrans < (actStart - item.birth) / lifespan) ||
+                                         (hasActiveEnd && tTrans > (actEnd - item.birth) / lifespan);
+                    addStop(tTrans - halfWin, isDarkBefore ? darkC1 : c1);
+                    addStop(tTrans + halfWin, isDarkBefore ? darkC2 : c2);
+                }
+
+                // Г. Переход к завершению творчества / «творческому молчанию» (Яркий -> Тёмный)
+                if (hasActiveEnd) {
+                    const tEnd = (actEnd - item.birth) / lifespan;
+                    const activeColAtEnd = isTransitional ? c2 : c1;
+                    const darkColAtEnd = isTransitional ? darkC2 : darkC1;
+                    addStop(tEnd - halfWin, activeColAtEnd);
+                    addStop(tEnd + halfWin, darkColAtEnd);
+                }
+
+                // Д. Конец плашки (год смерти или настоящее время для живущих)
+                const finalColor = hasActiveEnd 
+                    ? (isTransitional ? darkC2 : darkC1) 
+                    : (isTransitional ? c2 : c1);
 
                 if (isLiving) {
-                    // Для ныне живущих второй цвет в конце плашки плавно растворяется в прозрачность
-                    const fadeStart = stop2 + (1 - stop2) * 0.5;
-                    if (fadeStart < 1) {
-                        grad.addColorStop(fadeStart, color2);
-                    }
-                    const color2Transparent = color2.startsWith('#')
-                        ? color2 + '00'
-                        : (color2.startsWith('hsl') ? color2.replace('hsl', 'hsla').replace(')', ', 0)') : 'rgba(0,0,0,0)');
-                    grad.addColorStop(1, color2Transparent);
+                    const fadeStart = lastStop + (1 - lastStop) * 0.5;
+                    if (fadeStart < 1) addStop(fadeStart, finalColor);
+                    const finalTransparent = finalColor.startsWith('#')
+                        ? finalColor + '00'
+                        : (finalColor.startsWith('hsl') ? finalColor.replace('hsl', 'hsla').replace(')', ', 0)') : 'rgba(0,0,0,0)');
+                    addStop(1, finalTransparent);
                 } else {
-                    grad.addColorStop(1, color2);
+                    addStop(1, finalColor);
                 }
 
                 ctx.fillStyle = grad;
 
             } else if (isLiving) {
-                // Ныне живущие авторы без смены эпохи (монолитный цвет с затуханием в прозрачность)
+                // Ныне живущие авторы без смены эпохи и без границ активности
                 if (item._lastColorBase !== instColor) {
                     item._lastColorBase = instColor;
                     if (instColor.startsWith('#')) {
@@ -467,9 +786,9 @@ export class Renderer {
                     if (this.ratingMetric === 'bar_works') {
                         valStr = String(item.works);
                     } else if (this.ratingMetric === 'bar_age') {
-                        valStr = String(item.lifespan) + ' лет';
+                        valStr = String(item.lifespan) + ' ' + t('years');
                     } else if (this.ratingMetric === 'bar_productivity') {
-                        valStr = (item.works / item.lifespan).toFixed(1) + ' в год';
+                        valStr = (item.works / item.lifespan).toFixed(1) + ' ' + t('perYear');
                     }
 
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
@@ -968,10 +1287,10 @@ export class Renderer {
             );
         }
 
-        // Заголовок группы
+        // Заголовок группы (переводим на лету перед отрисовкой на Canvas)
         ctx.font = `bold ${tSize}px system-ui, -apple-system, sans-serif`;
         ctx.fillStyle = isMain ? '#ffffff' : 'rgba(255, 255, 255, 0.75)'; 
-        ctx.fillText(group.name, lineX - offsetX, textY - tGap);
+        ctx.fillText(tData(group.name), lineX - offsetX, textY - tGap);
         
         // Строки статистики
         ctx.font = `${sSize}px system-ui, -apple-system, sans-serif`;
